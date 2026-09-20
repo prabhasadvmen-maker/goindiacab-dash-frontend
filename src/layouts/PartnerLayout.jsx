@@ -52,8 +52,8 @@ export default function PartnerLayout() {
       className={({ isActive }) => cn(
         "flex items-center px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden",
         isActive 
-          ? "bg-orange-100 text-[#fa9600] font-bold" 
-          : "text-gray-600 hover:bg-orange-50 hover:text-[#fa9600]"
+          ? "bg-[#F59E0B] text-white font-bold shadow-md" 
+          : "text-slate-300 hover:bg-slate-800 hover:text-white"
       )}
       title={!isSidebarOpen ? item.name : ""}
     >
@@ -62,8 +62,8 @@ export default function PartnerLayout() {
       </div>
       <span 
         className={cn(
-          "whitespace-nowrap transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "ml-3 opacity-100 translate-x-0 w-auto" : "opacity-0 -translate-x-4 w-0 m-0"
+          "whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden",
+          isSidebarOpen ? "ml-3 opacity-100 translate-x-0 max-w-[200px]" : "opacity-0 -translate-x-4 max-w-0 m-0"
         )}
       >
         {item.name}
@@ -72,16 +72,16 @@ export default function PartnerLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-[#f7f9fc] overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-white border-r border-gray-200 flex flex-col z-20 transition-all duration-300 ease-in-out shadow-sm",
+          "bg-slate-900 border-r border-slate-800 flex flex-col z-20 transition-all duration-300 ease-in-out",
           isSidebarOpen ? "w-64" : "w-20"
         )}
       >
         {/* Sidebar Header */}
-        <div className="h-20 flex items-center px-4 border-b border-gray-100">
+        <div className="h-20 flex items-center px-4 border-b border-slate-800">
           <div className="flex items-center w-full">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 border border-gray-100 shadow-sm overflow-hidden p-1">
               <img src="/Goindaicab%20logo.png" alt="Logo" className="object-contain w-full h-full" />
@@ -90,11 +90,11 @@ export default function PartnerLayout() {
             <div 
               className={cn(
                 "whitespace-nowrap transition-all duration-300 overflow-hidden",
-                isSidebarOpen ? "opacity-100 ml-3 w-auto translate-x-0" : "opacity-0 w-0 m-0 -translate-x-4"
+                isSidebarOpen ? "opacity-100 ml-3 max-w-[200px] translate-x-0" : "opacity-0 max-w-0 m-0 -translate-x-4"
               )}
             >
-              <h1 className="font-bold text-sm uppercase text-gray-800 tracking-wider">Goindiacab</h1>
-              <p className="text-xs font-semibold text-[#fa9600] mt-0.5">Partner Portal</p>
+              <h1 className="font-bold text-sm uppercase text-white tracking-wider">Goindiacab</h1>
+              <p className="text-xs font-semibold text-[#F59E0B] mt-0.5">Partner Portal</p>
             </div>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function PartnerLayout() {
         </div>
 
         {/* Sticky Bottom Settings */}
-        <div className="shrink-0 border-t border-gray-100 py-4 bg-gray-50">
+        <div className="shrink-0 border-t border-slate-800 py-4 bg-slate-900">
           <nav className="space-y-1">
             {bottomMenuItems.map((item) => (
               <SidebarLink key={item.name} item={item} />
@@ -166,7 +166,7 @@ export default function PartnerLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#f7f9fc] p-4 md:p-8">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-8">
           <Outlet />
         </main>
       </div>

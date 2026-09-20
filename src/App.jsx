@@ -10,6 +10,30 @@ import Dashboard from './pages/superadmin/Dashboard';
 import Admin from './pages/superadmin/Admin';
 import PartnerApplications from './pages/superadmin/PartnerApplications';
 import PartnerApplicationReview from './pages/superadmin/PartnerApplicationReview';
+import Users from './pages/superadmin/Users';
+import Vehicles from './pages/superadmin/Vehicles';
+import VehicleDetails from './pages/superadmin/VehicleDetails';
+import Bookings from './pages/superadmin/Bookings';
+import BookingDetails from './pages/superadmin/BookingDetails';
+import Payments from './pages/superadmin/Payments';
+import Location from './pages/superadmin/Location';
+import Operations from './pages/superadmin/Operations';
+import Finance from './pages/superadmin/Finance';
+import Reports from './pages/superadmin/Reports';
+import Complaints from './pages/superadmin/Complaints';
+import ComplaintDetails from './pages/superadmin/ComplaintDetails';
+import AdminProfile from './pages/superadmin/Profile';
+import Settings from './pages/superadmin/Settings';
+import Help from './pages/superadmin/Help';
+import PartnerBookings from './pages/partner/Bookings';
+import PartnerBookingDetails from './pages/partner/BookingDetails';
+import PartnerTrips from './pages/partner/Trips';
+import PartnerEarnings from './pages/partner/Earnings';
+import PartnerVehicle from './pages/partner/Vehicle';
+import PartnerNotifications from './pages/partner/Notifications';
+import PartnerProfile from './pages/partner/Profile';
+import PartnerSupport from './pages/partner/Support';
+import PartnerSettings from './pages/partner/Settings';
 
 // Admin Pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -29,7 +53,7 @@ import UserDashboard from './pages/user/UserDashboard';
 import BookCab from './pages/user/BookCab';
 import MyBookings from './pages/user/MyBookings';
 import TrackTrip from './pages/user/TrackTrip';
-import Profile from './pages/user/Profile';
+import UserProfile from './pages/user/Profile';
 
 // Shared Pages
 import LoginSelector from './pages/LoginSelector';
@@ -119,7 +143,7 @@ function App() {
           <Route path="book" element={<BookCab />} />
           <Route path="bookings" element={<MyBookings />} />
           <Route path="track" element={<TrackTrip />} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={<UserProfile />} />
           {/* Menu Items Placeholders */}
           <Route path="payments" element={<div className="p-6">Payments Page</div>} />
           <Route path="notifications" element={<div className="p-6">Notifications Page</div>} />
@@ -156,14 +180,24 @@ function App() {
              <Route index element={<PartnerApplications />} />
              <Route path=":id" element={<PartnerApplicationReview />} />
           </Route>
-          <Route path="users" element={<div className="p-4 text-gray-500">Users Page Placeholder</div>} />
-          <Route path="operations" element={<div className="p-4 text-gray-500">Operations Page Placeholder</div>} />
-          <Route path="finance" element={<div className="p-4 text-gray-500">Finance Page Placeholder</div>} />
-          <Route path="reports" element={<div className="p-4 text-gray-500">Reports Page Placeholder</div>} />
+          <Route path="users" element={<Users />} />
+          <Route path="vehicles">
+             <Route index element={<Vehicles />} />
+             <Route path=":id" element={<VehicleDetails />} />
+          </Route>
+          <Route path="bookings">
+             <Route index element={<Bookings />} />
+             <Route path=":id" element={<BookingDetails />} />
+          </Route>
+          <Route path="operations" element={<Operations />} />
+          <Route path="finance" element={<Payments />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="location" element={<Location />} />
+          <Route path="reports" element={<Reports />} />
           
-          <Route path="profile" element={<div className="p-4 text-gray-500">Profile Page Placeholder</div>} />
-          <Route path="settings" element={<div className="p-4 text-gray-500">Settings Page Placeholder</div>} />
-          <Route path="help" element={<div className="p-4 text-gray-500">Help Page Placeholder</div>} />
+          <Route path="profile" element={<AdminProfile />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="help" element={<Help />} />
         </Route>
 
         {/* Protected Admin Routes */}
@@ -181,18 +215,25 @@ function App() {
              <Route index element={<PartnerApplications />} />
              <Route path=":id" element={<PartnerApplicationReview />} />
           </Route>
-          <Route path="customers" element={<div className="p-4 text-gray-500">Customer Management Placeholder</div>} />
-          <Route path="vehicles" element={<div className="p-4 text-gray-500">Vehicle Management Placeholder</div>} />
-          <Route path="bookings" element={<div className="p-4 text-gray-500">Booking Management Placeholder</div>} />
-          <Route path="payments" element={<div className="p-4 text-gray-500">Payment Management Placeholder</div>} />
-          <Route path="location" element={<div className="p-4 text-gray-500">Online/Location Placeholder</div>} />
+          <Route path="customers" element={<Users />} />
+          <Route path="vehicles">
+             <Route index element={<Vehicles />} />
+             <Route path=":id" element={<VehicleDetails />} />
+          </Route>
+          <Route path="bookings">
+             <Route index element={<Bookings />} />
+             <Route path=":id" element={<BookingDetails />} />
+          </Route>
+          <Route path="payments" element={<Payments />} />
+          <Route path="location" element={<Location />} />
           <Route path="notifications" element={<div className="p-4 text-gray-500">Notifications Placeholder</div>} />
-          <Route path="complaints" element={<div className="p-4 text-gray-500">Complaints Placeholder</div>} />
-          <Route path="reports" element={<div className="p-4 text-gray-500">Reports Placeholder</div>} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="complaints/:id" element={<ComplaintDetails />} />
+          <Route path="reports" element={<Reports />} />
           
-          <Route path="profile" element={<div className="p-4 text-gray-500">Profile Placeholder</div>} />
-          <Route path="support" element={<div className="p-4 text-gray-500">Support Placeholder</div>} />
-          <Route path="settings" element={<div className="p-4 text-gray-500">Settings Placeholder</div>} />
+          <Route path="profile" element={<AdminProfile />} />
+          <Route path="support" element={<Help />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Protected Partner Routes */}
@@ -215,15 +256,16 @@ function App() {
         >
           <Route index element={<Navigate to="/partner/dashboard" replace />} />
           <Route path="dashboard" element={<PartnerDashboard />} />
-          <Route path="bookings" element={<div className="p-4 text-gray-500">Partner Bookings Placeholder</div>} />
-          <Route path="trips" element={<div className="p-4 text-gray-500">Partner Trips Placeholder</div>} />
-          <Route path="earnings" element={<div className="p-4 text-gray-500">Partner Earnings Placeholder</div>} />
-          <Route path="vehicle" element={<div className="p-4 text-gray-500">Partner Vehicle Placeholder</div>} />
-          <Route path="notifications" element={<div className="p-4 text-gray-500">Partner Notifications Placeholder</div>} />
+          <Route path="bookings" element={<PartnerBookings />} />
+          <Route path="bookings/:id" element={<PartnerBookingDetails />} />
+          <Route path="trips" element={<PartnerTrips />} />
+          <Route path="earnings" element={<PartnerEarnings />} />
+          <Route path="vehicle" element={<PartnerVehicle />} />
+          <Route path="notifications" element={<PartnerNotifications />} />
           
-          <Route path="support" element={<div className="p-4 text-gray-500">Partner Support Placeholder</div>} />
-          <Route path="profile" element={<div className="p-4 text-gray-500">Partner Profile Placeholder</div>} />
-          <Route path="settings" element={<div className="p-4 text-gray-500">Partner Settings Placeholder</div>} />
+          <Route path="support" element={<PartnerSupport />} />
+          <Route path="profile" element={<PartnerProfile />} />
+          <Route path="settings" element={<PartnerSettings />} />
         </Route>
       </Routes>
     </Router>
