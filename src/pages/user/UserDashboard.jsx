@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserAuthStore } from '../../store/userAuthStore';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Clock, ShieldCheck, Car, Star, Wallet, TrendingUp, CalendarCheck } from 'lucide-react';
+import { MapPin, Navigation, Clock, ChevronRight, Car, History, CreditCard, ShieldCheck } from 'lucide-react';
+import axios from 'axios';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,243 +10,164 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function UserDashboard() {
   const { user } = useUserAuthStore();
   const navigate = useNavigate();
+  const [recentBooking, setRecentBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const recentTrips = [
-    {
-      id: 'TRP-9832',
-      date: 'Today, 10:30 AM',
-      from: 'Indira Gandhi International Airport',
-      to: 'Connaught Place, New Delhi',
-      amount: '₹450',
-      status: 'Completed',
-      car: 'Sedan',
-      driver: 'Rahul S.',
-    },
-    {
-      id: 'TRP-9711',
-      date: 'Yesterday, 6:15 PM',
-      from: 'Cyber Hub, Gurugram',
-      to: 'Vasant Kunj, New Delhi',
-      amount: '₹320',
-      status: 'Completed',
-      car: 'Mini',
-      driver: 'Amit K.',
+  useEffect(() => {
+    fetchRecentBooking();
+  }, []);
+
+  const fetchRecentBooking = async () => {
+    try {
+      const { userToken } = useUserAuthStore.getState();
+      const response = await axios.get(`${API_URL}/api/v1/user/operations/bookings`, {
+        headers: { Authorization: `Bearer ${userToken}` }
+      });
+      if (response.data.success && response.data.data.length > 0) {
+        // Find first active booking, or most recent completed
+        const active = response.data.data.find(b => !['COMPLETED', 'CANCELLED'].includes(b.status));
+        if (active) setRecentBooking(active);
+        else setRecentBooking(response.data.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto h-[calc(100vh-80px)] overflow-y-auto space-y-6">
       
-      {/* Top Header / Call to Action */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Hello, {user?.name || 'Traveler'}! 👋
-          </h2>
-          <p className="text-gray-500 mt-1">Where are we going today?</p>
-        </div>
-        
-        <button 
-          onClick={() => navigate('/user/book')}
-          className="bg-[#fa9600] hover:bg-[#e68a00] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-orange-500/20 transition-all flex items-center space-x-2"
-        >
-          <Car className="w-5 h-5" />
-          <span>Book a Ride Now</span>
-        </button>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <Wallet className="w-6 h-6" />
-            </div>
-            <p className="text-gray-500 font-medium">Wallet Balance</p>
-          </div>
-          <h3 className="text-3xl font-extrabold text-gray-900">₹0.00</h3>
-          <p className="text-sm text-blue-600 mt-2 font-medium flex items-center cursor-pointer hover:underline">
-            + Add Money to Wallet
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-              <CalendarCheck className="w-6 h-6" />
-            </div>
-            <p className="text-gray-500 font-medium">Total Rides</p>
-          </div>
-          <h3 className="text-3xl font-extrabold text-gray-900">12</h3>
-          <p className="text-sm text-gray-500 mt-2 font-medium">Lifetime completed</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-3 bg-orange-50 text-[#fa9600] rounded-xl">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <p className="text-gray-500 font-medium">Total Saved</p>
-          </div>
-          <h3 className="text-3xl font-extrabold text-gray-900">₹450</h3>
-          <p className="text-sm text-gray-500 mt-2 font-medium">Using GoIndiaCab offers</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
-              <Star className="w-6 h-6" />
-            </div>
-            <p className="text-gray-500 font-medium">Your Rating</p>
-          </div>
-          <h3 className="text-3xl font-extrabold text-gray-900">4.9</h3>
-          <p className="text-sm text-gray-500 mt-2 font-medium">Top tier passenger</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Quick Actions & Recent Activity (Left Column) */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Quick Actions */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Quick Actions</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <button 
-                onClick={() => navigate('/user/book')}
-                className="flex flex-col items-center justify-center p-4 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-100"
-              >
-                <Car className="w-8 h-8 mb-2" />
-                <span className="font-semibold text-sm">Ride</span>
-              </button>
-              <button 
-                onClick={() => navigate('/user/book?type=rental')}
-                className="flex flex-col items-center justify-center p-4 rounded-xl bg-orange-50 text-[#fa9600] hover:bg-orange-100 transition-colors border border-orange-100"
-              >
-                <Clock className="w-8 h-8 mb-2" />
-                <span className="font-semibold text-sm">Rentals</span>
-              </button>
-              <button 
-                onClick={() => navigate('/user/book?type=outstation')}
-                className="flex flex-col items-center justify-center p-4 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-100"
-              >
-                <Navigation className="w-8 h-8 mb-2" />
-                <span className="font-semibold text-sm">Outstation</span>
-              </button>
-              <button 
-                className="flex flex-col items-center justify-center p-4 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors border border-purple-100"
-              >
-                <ShieldCheck className="w-8 h-8 mb-2" />
-                <span className="font-semibold text-sm">Safety</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Trips */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Recent Trips</h3>
-              <button 
-                onClick={() => navigate('/user/bookings')}
-                className="text-blue-600 text-sm font-semibold hover:text-blue-800 transition-colors"
-              >
-                View All
-              </button>
-            </div>
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
+         <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Car className="w-48 h-48" />
+         </div>
+         <div className="relative z-10">
+            <h1 className="text-3xl md:text-4xl font-black mb-2">{greeting()}, {user?.name?.split(' ')[0] || 'User'}!</h1>
+            <p className="text-gray-400 font-medium text-lg">Where are we heading today?</p>
             
-            <div className="divide-y divide-gray-100">
-              {recentTrips.map((trip) => (
-                <div key={trip.id} className="p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-gray-500">{trip.date}</span>
-                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                        {trip.status}
-                      </span>
-                    </div>
-                    
-                    <div className="relative pl-6 space-y-4">
-                      {/* Timeline line */}
-                      <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-gray-200"></div>
-                      
-                      <div className="relative">
-                        <div className="absolute left-[-24px] top-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
-                        <p className="text-sm font-semibold text-gray-900">{trip.from}</p>
-                      </div>
-                      
-                      <div className="relative">
-                        <div className="absolute left-[-24px] top-1 w-3 h-3 bg-[#fa9600] rounded-full border-2 border-white shadow-sm"></div>
-                        <p className="text-sm font-semibold text-gray-900">{trip.to}</p>
-                      </div>
-                    </div>
+            <button 
+               onClick={() => navigate('/user/book')}
+               className="mt-8 bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-2xl font-bold text-lg flex items-center shadow-lg shadow-orange-500/20 transition-transform active:scale-95"
+            >
+               Book a Ride Now <ChevronRight className="w-5 h-5 ml-2" />
+            </button>
+         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         
+         {/* Quick Links */}
+         <div className="md:col-span-2 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+               <div 
+                  onClick={() => navigate('/user/bookings')}
+                  className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all cursor-pointer group"
+               >
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                     <History className="w-6 h-6" />
                   </div>
-                  
-                  <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-6 flex flex-row sm:flex-col justify-between sm:justify-center items-center sm:items-end">
-                    <div>
-                      <p className="text-2xl font-extrabold text-gray-900">{trip.amount}</p>
-                      <p className="text-xs text-gray-500 font-medium">Paid via UPI</p>
-                    </div>
-                    <div className="text-right sm:mt-4">
-                      <p className="text-sm font-bold text-gray-800">{trip.car}</p>
-                      <p className="text-xs text-gray-500 flex items-center justify-end">
-                        {trip.driver} <Star className="w-3 h-3 text-yellow-400 ml-1 fill-yellow-400" /> 4.8
-                      </p>
-                    </div>
+                  <h3 className="font-black text-gray-900 text-lg">My Rides</h3>
+                  <p className="text-sm font-medium text-gray-500">View trip history</p>
+               </div>
+               
+               <div 
+                  onClick={() => navigate('/user/payments')}
+                  className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all cursor-pointer group"
+               >
+                  <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                     <CreditCard className="w-6 h-6" />
                   </div>
-                </div>
-              ))}
+                  <h3 className="font-black text-gray-900 text-lg">Payments</h3>
+                  <p className="text-sm font-medium text-gray-500">Wallet & methods</p>
+               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Map & Alerts (Right Column) */}
-        <div className="lg:col-span-1 space-y-6">
-          
-          {/* Map Area */}
-          <div className="bg-white rounded-2xl shadow-sm border border-blue-200 overflow-hidden relative h-64">
-             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 z-10"></div>
-             
-             {/* Fake map image background */}
-             <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=New+Delhi&zoom=13&size=800x400&sensor=false&style=feature:all|element:labels|visibility:off&client=gme-googleinc')] bg-cover bg-center opacity-80"></div>
-             
-             {/* Map overlay content */}
-             <div className="absolute inset-0 flex flex-col items-center justify-center bg-transparent">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-full animate-ping absolute"></div>
-                <div className="bg-blue-600 p-3 rounded-full shadow-lg border-4 border-white relative z-10">
-                  <MapPin className="w-6 h-6 text-white" />
-                </div>
-                <div className="bg-white/95 backdrop-blur-sm px-4 py-2 mt-4 rounded-xl shadow-lg border border-gray-100">
-                  <p className="font-bold text-gray-900 text-sm">Your Location</p>
-                </div>
-             </div>
-          </div>
+            {/* Active / Recent Ride Widget */}
+            {!loading && recentBooking && (
+               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-full -z-10"></div>
+                  
+                  <div className="flex justify-between items-start mb-6">
+                     <div>
+                        <h3 className="font-black text-gray-900 text-xl flex items-center">
+                           {['PENDING', 'ACCEPTED', 'ENROUTE', 'ARRIVED', 'IN_PROGRESS'].includes(recentBooking.status) 
+                              ? <span className="flex items-center"><Navigation className="w-5 h-5 mr-2 text-orange-500"/> Active Ride</span> 
+                              : <span className="flex items-center"><Clock className="w-5 h-5 mr-2 text-gray-400"/> Last Ride</span>
+                           }
+                        </h3>
+                        <p className="text-xs font-bold text-gray-400 mt-1 uppercase">
+                           {new Date(recentBooking.createdAt).toLocaleDateString()}
+                        </p>
+                     </div>
+                     <span className={cn(
+                        "px-3 py-1 rounded-full text-xs font-bold",
+                        ['COMPLETED'].includes(recentBooking.status) ? "bg-green-100 text-green-700" :
+                        ['CANCELLED'].includes(recentBooking.status) ? "bg-red-100 text-red-700" :
+                        "bg-orange-100 text-orange-700"
+                     )}>
+                        {recentBooking.status}
+                     </span>
+                  </div>
 
-          {/* Action Required / Alerts */}
-          <div className="bg-blue-50 rounded-2xl shadow-sm border border-blue-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Promotions</h3>
-            <ul className="space-y-3">
-              <li className="flex items-start bg-white p-3 rounded-xl border border-blue-100">
-                <div className="w-2 h-2 rounded-full bg-[#fa9600] mt-1.5 mr-3 shrink-0"></div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">50% Off your next ride</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Use code GOINDIA50</p>
-                </div>
-              </li>
-              <li className="flex items-start bg-white p-3 rounded-xl border border-blue-100">
-                <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 mr-3 shrink-0"></div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">Refer & Earn</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Earn ₹100 for every friend</p>
-                </div>
-              </li>
-            </ul>
-          </div>
+                  <div className="space-y-4 mb-6">
+                     <div className="flex items-start">
+                        <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 mt-0.5">
+                           <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                        </div>
+                        <p className="font-bold text-gray-900 text-sm line-clamp-1">{recentBooking.pickup.address}</p>
+                     </div>
+                     <div className="flex items-start">
+                        <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3 mt-0.5">
+                           <MapPin className="w-3 h-3" />
+                        </div>
+                        <p className="font-bold text-gray-900 text-sm line-clamp-1">{recentBooking.dropoff.address}</p>
+                     </div>
+                  </div>
 
-        </div>
+                  <button 
+                     onClick={() => navigate(['PENDING', 'ACCEPTED', 'ENROUTE', 'ARRIVED', 'IN_PROGRESS'].includes(recentBooking.status) ? `/user/track?id=${recentBooking._id}` : '/user/bookings')}
+                     className="w-full bg-gray-50 hover:bg-gray-100 text-gray-900 py-3 rounded-xl font-bold text-sm transition-colors"
+                  >
+                     {['PENDING', 'ACCEPTED', 'ENROUTE', 'ARRIVED', 'IN_PROGRESS'].includes(recentBooking.status) ? 'Track Live' : 'View Details'}
+                  </button>
+               </div>
+            )}
+         </div>
+
+         {/* Sidebar Widgets */}
+         <div className="space-y-6">
+            <div className="bg-orange-50 rounded-3xl p-6 border border-orange-100">
+               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4 text-orange-500 shadow-sm">
+                  <ShieldCheck className="w-6 h-6" />
+               </div>
+               <h3 className="font-black text-gray-900 text-lg mb-2">Safety First</h3>
+               <p className="text-sm font-medium text-gray-600 mb-4">Your safety is our priority. All drivers are verified and rides are tracked 24/7.</p>
+               <button onClick={() => navigate('/user/support')} className="text-orange-600 font-bold text-sm hover:underline">Learn more</button>
+            </div>
+
+            <div className="bg-gray-900 rounded-3xl p-6 text-white text-center">
+               <h3 className="font-black text-xl mb-2">Refer & Earn</h3>
+               <p className="text-gray-400 text-sm font-medium mb-4">Share your code with friends and earn wallet balance.</p>
+               <div className="bg-white/10 px-4 py-3 rounded-xl border border-white/20 font-mono font-bold tracking-widest text-lg">
+                  {user?.referralCode || 'GOINDIA50'}
+               </div>
+            </div>
+         </div>
       </div>
     </div>
   );

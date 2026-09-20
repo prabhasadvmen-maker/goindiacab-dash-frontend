@@ -54,6 +54,10 @@ import BookCab from './pages/user/BookCab';
 import MyBookings from './pages/user/MyBookings';
 import TrackTrip from './pages/user/TrackTrip';
 import UserProfile from './pages/user/Profile';
+import UserPayments from './pages/user/Payments';
+import Notifications from './pages/user/Notifications';
+import Support from './pages/user/Support';
+import UserSettings from './pages/user/Settings';
 
 // Shared Pages
 import LoginSelector from './pages/LoginSelector';
@@ -145,10 +149,10 @@ function App() {
           <Route path="track" element={<TrackTrip />} />
           <Route path="profile" element={<UserProfile />} />
           {/* Menu Items Placeholders */}
-          <Route path="payments" element={<div className="p-6">Payments Page</div>} />
-          <Route path="notifications" element={<div className="p-6">Notifications Page</div>} />
-          <Route path="support" element={<div className="p-6">Support Page</div>} />
-          <Route path="settings" element={<div className="p-6">Settings Page</div>} />
+          <Route path="payments" element={<UserPayments />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="support" element={<Support />} />
+          <Route path="settings" element={<UserSettings />} />
         </Route>
 
         {/* Smart Redirect Root based on role */}
