@@ -66,9 +66,9 @@ import LoginSelector from './pages/LoginSelector';
 const ProtectedSuperAdminRoute = ({ children }) => {
   const token = useAuthStore((state) => state.superAdminToken);
   const user = useAuthStore((state) => state.superAdminUser);
-  
+
   const role = user?.role || 'SuperAdmin';
-  
+
   if (!token || role !== 'SuperAdmin') {
     return <Navigate to="/superadmin/login" replace />;
   }
@@ -90,11 +90,11 @@ const ProtectedAdminRoute = ({ children }) => {
 const ProtectedPartnerRoute = ({ children }) => {
   const token = useAuthStore((state) => state.partnerToken);
   const user = useAuthStore((state) => state.partnerUser);
-  
+
   if (!token || user?.role !== 'partner') {
     return <Navigate to="/partner/login" replace />;
   }
-  
+
   // If partner is not fully approved, they should only see onboarding
   // Note: we can handle onboarding vs dashboard routing inside the components or here.
   return children;
@@ -105,11 +105,11 @@ const RootRedirect = () => {
   const superUser = useAuthStore((state) => state.superAdminUser);
   const adminUser = useAuthStore((state) => state.adminUser);
   const partnerUser = useAuthStore((state) => state.partnerUser);
-  
+
   if (superUser?.role === 'SuperAdmin' || (superUser && !superUser.role)) {
     return <Navigate to="/superadmin/dashboard" replace />;
   }
-  
+
   if (adminUser?.role === 'Admin' || adminUser?.role === 'NGO') {
     return <Navigate to="/admin/dashboard" replace />;
   }
@@ -117,7 +117,7 @@ const RootRedirect = () => {
   if (partnerUser?.role === 'partner') {
     return <Navigate to={partnerUser.applicationStatus === 'approved' ? '/partner/dashboard' : '/partner/onboarding'} replace />;
   }
-  
+
   return <Navigate to="/superadmin/login" replace />; // Default fallback
 };
 
@@ -157,7 +157,7 @@ function App() {
 
         {/* Smart Redirect Root based on role */}
         <Route path="/" element={<RootRedirect />} />
-        
+
         {/* Public Routes */}
         <Route path="/login" element={<LoginSelector />} />
         <Route path="/superadmin/login" element={<Login />} />
@@ -166,8 +166,8 @@ function App() {
         <Route path="/user/login" element={<UserLogin />} />
 
         {/* Protected SuperAdmin Routes */}
-        <Route 
-          path="/superadmin" 
+        <Route
+          path="/superadmin"
           element={
             <ProtectedSuperAdminRoute>
               <SuperAdminLayout />
@@ -177,36 +177,36 @@ function App() {
           {/* Default dashboard when going to /superadmin */}
           <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          
+
           {/* Placeholders for other pages */}
           <Route path="admin" element={<Admin />} />
           <Route path="partners">
-             <Route index element={<PartnerApplications />} />
-             <Route path=":id" element={<PartnerApplicationReview />} />
+            <Route index element={<PartnerApplications />} />
+            <Route path=":id" element={<PartnerApplicationReview />} />
           </Route>
           <Route path="users" element={<Users />} />
           <Route path="vehicles">
-             <Route index element={<Vehicles />} />
-             <Route path=":id" element={<VehicleDetails />} />
+            <Route index element={<Vehicles />} />
+            <Route path=":id" element={<VehicleDetails />} />
           </Route>
           <Route path="bookings">
-             <Route index element={<Bookings />} />
-             <Route path=":id" element={<BookingDetails />} />
+            <Route index element={<Bookings />} />
+            <Route path=":id" element={<BookingDetails />} />
           </Route>
           <Route path="operations" element={<Operations />} />
           <Route path="finance" element={<Payments />} />
           <Route path="payments" element={<Payments />} />
           <Route path="location" element={<Location />} />
           <Route path="reports" element={<Reports />} />
-          
+
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<Settings />} />
           <Route path="help" element={<Help />} />
         </Route>
 
         {/* Protected Admin Routes */}
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin"
           element={
             <ProtectedAdminRoute>
               <AdminLayout />
@@ -216,17 +216,17 @@ function App() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="partners">
-             <Route index element={<PartnerApplications />} />
-             <Route path=":id" element={<PartnerApplicationReview />} />
+            <Route index element={<PartnerApplications />} />
+            <Route path=":id" element={<PartnerApplicationReview />} />
           </Route>
           <Route path="customers" element={<Users />} />
           <Route path="vehicles">
-             <Route index element={<Vehicles />} />
-             <Route path=":id" element={<VehicleDetails />} />
+            <Route index element={<Vehicles />} />
+            <Route path=":id" element={<VehicleDetails />} />
           </Route>
           <Route path="bookings">
-             <Route index element={<Bookings />} />
-             <Route path=":id" element={<BookingDetails />} />
+            <Route index element={<Bookings />} />
+            <Route path=":id" element={<BookingDetails />} />
           </Route>
           <Route path="payments" element={<Payments />} />
           <Route path="location" element={<Location />} />
@@ -234,24 +234,24 @@ function App() {
           <Route path="complaints" element={<Complaints />} />
           <Route path="complaints/:id" element={<ComplaintDetails />} />
           <Route path="reports" element={<Reports />} />
-          
+
           <Route path="profile" element={<AdminProfile />} />
           <Route path="support" element={<Help />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Protected Partner Routes */}
-        <Route 
-          path="/partner/onboarding" 
+        <Route
+          path="/partner/onboarding"
           element={
             <ProtectedPartnerRoute>
               <PartnerOnboarding />
             </ProtectedPartnerRoute>
-          } 
+          }
         />
 
-        <Route 
-          path="/partner" 
+        <Route
+          path="/partner"
           element={
             <ProtectedPartnerRoute>
               <PartnerLayout />
@@ -266,7 +266,7 @@ function App() {
           <Route path="earnings" element={<PartnerEarnings />} />
           <Route path="vehicle" element={<PartnerVehicle />} />
           <Route path="notifications" element={<PartnerNotifications />} />
-          
+
           <Route path="support" element={<PartnerSupport />} />
           <Route path="profile" element={<PartnerProfile />} />
           <Route path="settings" element={<PartnerSettings />} />

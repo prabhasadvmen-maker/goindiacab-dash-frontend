@@ -27,11 +27,32 @@ export default function PartnerBookings() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API_URL}/api/partner/bookings?status=${activeTab}`, {
+      let endpoint = '/api/v2/partner/bookings/history';
+      if (activeTab === 'ACTIVE') {
+         endpoint = '/api/v2/partner/bookings/active';
+      }
+
+      const { data } = await axios.get(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${partnerToken}` }
       });
+
       if (data.success) {
-        setBookings(data.data);
+        let fetchedBookings = [];
+        if (activeTab === 'ACTIVE') {
+           // Active endpoint returns a single object
+           if (data.data) fetchedBookings = [data.data];
+        } else {
+           fetchedBookings = data.data || [];
+        }
+
+        // Apply local filtering for COMPLETED or CANCELLED from history
+        if (activeTab === 'COMPLETED') {
+           fetchedBookings = fetchedBookings.filter(b => b.status === 'COMPLETED');
+        } else if (activeTab === 'CANCELLED') {
+           fetchedBookings = fetchedBookings.filter(b => b.status === 'CANCELLED');
+        }
+        
+        setBookings(fetchedBookings);
       }
     } catch (error) {
       console.error('Error fetching partner bookings:', error);

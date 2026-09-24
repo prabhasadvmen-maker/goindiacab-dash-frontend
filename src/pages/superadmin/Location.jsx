@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../../store/authStore';
@@ -13,116 +15,24 @@ function cn(...inputs) {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const containerStyle = {
-  width: '100%',
-  height: 'calc(100vh - 160px)' // Height adjusted for top bar and padding
-};
-
 // Default center (India)
-const defaultCenter = {
-  lat: 20.5937,
-  lng: 78.9629
-};
+const defaultCenter = [20.5937, 78.9629];
 
-const MapComponent = ({ mapsApiKey, activeDrivers, selectedDriver, setSelectedDriver, setMap, formatDate }) => {
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: mapsApiKey
-  });
+// Fix Leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
-  const onLoad = useCallback(function callback(mapInstance) {
-    setMap(mapInstance);
-  }, [setMap]);
-
-  const onUnmount = useCallback(function callback() {
-    setMap(null);
-  }, [setMap]);
-
-  if (loadError) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-red-500">
-        <AlertTriangle className="w-10 h-10 mb-2" />
-        <p className="font-bold">Error loading Google Maps</p>
-        <p className="text-sm text-gray-500">Check API Key configuration.</p>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-        <p className="font-semibold text-sm">Initializing Tracking Map...</p>
-      </div>
-    );
-  }
-
-  return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={activeDrivers.length > 0 ? activeDrivers[0].location : defaultCenter}
-      zoom={5}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-      options={{
-        disableDefaultUI: false,
-        zoomControl: true,
-        streetViewControl: false,
-        mapTypeControl: false,
-      }}
-    >
-      {/* Render Active Drivers */}
-      {activeDrivers.map((driver) => (
-        driver.location && driver.location.lat && driver.location.lng && (
-          <Marker
-            key={driver.driverId}
-            position={driver.location}
-            icon={{
-              url: 'https://cdn-icons-png.flaticon.com/512/3204/3204098.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-              origin: new window.google.maps.Point(0, 0),
-              anchor: new window.google.maps.Point(20, 40)
-            }}
-            onClick={() => setSelectedDriver(driver)}
-            animation={window.google.maps.Animation.DROP}
-          />
-        )
-      ))}
-
-      {/* Info Window for Selected Driver */}
-      {selectedDriver && selectedDriver.location && (
-        <InfoWindow
-          position={selectedDriver.location}
-          onCloseClick={() => setSelectedDriver(null)}
-          options={{ pixelOffset: new window.google.maps.Size(0, -40) }}
-        >
-          <div className="p-1 min-w-[200px]">
-            <div className="flex items-center space-x-3 border-b border-gray-100 pb-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                <Car className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-bold text-gray-900 text-sm">{selectedDriver.name}</p>
-                <p className="text-xs text-gray-500 font-mono font-semibold">{selectedDriver.vehicleNumber}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500 flex items-center">
-                <Navigation className="w-3 h-3 mr-1.5 text-blue-500" />
-                Status: <span className="ml-1 font-bold text-green-600">Online</span>
-              </p>
-              <p className="text-xs text-gray-500 flex items-center">
-                <Clock className="w-3 h-3 mr-1.5 text-gray-400" />
-                Updated: {formatDate(selectedDriver.lastUpdated)}
-              </p>
-            </div>
-          </div>
-        </InfoWindow>
-      )}
-    </GoogleMap>
-  );
-};
+// Custom Car Icon
+const carIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3204/3204098.png',
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40]
+});
 
 export default function Location() {
   const { superAdminToken, adminToken } = useAuthStore();
@@ -136,10 +46,10 @@ export default function Location() {
   // Fetch config and initial snapshot
   const initializeTracking = async () => {
     try {
-      // 1. Get Google Maps API Key from Backend
+      // 1. Get Geoapify API Key from Backend
       const configRes = await axios.get(`${API_URL}/api/config`);
       if (configRes.data.success) {
-        setMapsApiKey(configRes.data.data.googleMapsApiKey);
+        setMapsApiKey(configRes.data.data.apiKeys?.geoapify);
       }
 
       // 2. Fetch Active Drivers
@@ -202,7 +112,7 @@ export default function Location() {
           </div>
         </div>
         
-        {/* Active Driver Badges for quick focus (Optional UI) */}
+        {/* Active Driver Badges */}
         <div className="hidden md:flex space-x-2 overflow-x-auto max-w-md no-scrollbar">
           {activeDrivers.map(d => (
             <button 
@@ -210,8 +120,7 @@ export default function Location() {
               onClick={() => {
                 setSelectedDriver(d);
                 if (map && d.location) {
-                  map.panTo(d.location);
-                  map.setZoom(15);
+                  map.setView([d.location.lat, d.location.lng], 15);
                 }
               }}
               className="flex items-center space-x-2 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 transition-colors whitespace-nowrap"
@@ -224,27 +133,63 @@ export default function Location() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative" style={{ height: 'calc(100vh - 160px)' }}>
         {!mapsApiKey ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
             <p className="font-semibold text-sm">Loading Configuration...</p>
           </div>
         ) : (
-          <MapComponent 
-            mapsApiKey={mapsApiKey}
-            activeDrivers={activeDrivers}
-            selectedDriver={selectedDriver}
-            setSelectedDriver={setSelectedDriver}
-            setMap={setMap}
-            formatDate={formatDate}
-          />
+          <MapContainer 
+            center={activeDrivers.length > 0 && activeDrivers[0].location ? [activeDrivers[0].location.lat, activeDrivers[0].location.lng] : defaultCenter} 
+            zoom={5} 
+            style={{ height: '100%', width: '100%' }}
+            ref={setMap}
+          >
+            <TileLayer
+              url={`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${mapsApiKey}`}
+              attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            />
+
+            {activeDrivers.map((driver) => (
+              driver.location && driver.location.lat && driver.location.lng && (
+                <Marker 
+                  key={driver.driverId} 
+                  position={[driver.location.lat, driver.location.lng]}
+                  icon={carIcon}
+                  eventHandlers={{
+                    click: () => setSelectedDriver(driver),
+                  }}
+                >
+                  <Popup>
+                    <div className="min-w-[150px]">
+                      <div className="flex items-center space-x-2 border-b border-gray-100 pb-2 mb-2">
+                        <Car className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <p className="font-bold text-gray-900 text-sm m-0">{driver.name}</p>
+                          <p className="text-xs text-gray-500 font-mono m-0">{driver.vehicleNumber}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 flex items-center m-0">
+                        <Navigation className="w-3 h-3 mr-1 text-blue-500" />
+                        Status: <span className="ml-1 font-bold text-green-600">Online</span>
+                      </p>
+                      <p className="text-xs text-gray-500 flex items-center mt-1 m-0">
+                        <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                        {formatDate(driver.lastUpdated)}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            ))}
+          </MapContainer>
         )}
 
         {/* Floating status indicator */}
-        <div className="absolute bottom-6 left-6 z-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-gray-100 flex items-center space-x-3 pointer-events-none">
+        <div className="absolute bottom-6 left-6 z-[1000] bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-gray-100 flex items-center space-x-3 pointer-events-none">
           <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
-          <p className="text-sm font-bold text-gray-700">Live Sync Active</p>
+          <p className="text-sm font-bold text-gray-700 m-0">Live Sync Active</p>
         </div>
       </div>
     </div>

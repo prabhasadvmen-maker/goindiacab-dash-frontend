@@ -26,12 +26,13 @@ export default function PartnerTrips() {
   const fetchTrips = async () => {
     setLoading(true);
     try {
-      // Only fetch completed trips for the logbook
-      const { data } = await axios.get(`${API_URL}/api/partner/bookings?status=COMPLETED`, {
+      // Only fetch completed trips for the logbook from V2 history
+      const { data } = await axios.get(`${API_URL}/api/v2/partner/bookings/history`, {
         headers: { Authorization: `Bearer ${partnerToken}` }
       });
       if (data.success) {
-        setTrips(data.data);
+        const completedOnly = (data.data || []).filter(b => b.status === 'COMPLETED');
+        setTrips(completedOnly);
       }
     } catch (error) {
       console.error('Error fetching partner trips:', error);
