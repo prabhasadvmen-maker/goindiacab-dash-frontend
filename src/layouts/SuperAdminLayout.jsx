@@ -15,7 +15,8 @@ import {
   User, 
   LogOut,
   Menu,
-  CalendarDays
+  CalendarDays,
+  Globe
 } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -44,6 +45,7 @@ export default function SuperAdminLayout() {
     { name: 'Operations', icon: Briefcase, path: '/superadmin/operations' },
     { name: 'Finance', icon: IndianRupee, path: '/superadmin/finance' },
     { name: 'Reports', icon: FileText, path: '/superadmin/reports' },
+    { name: 'Website', icon: Globe, path: '/superadmin/website' },
   ];
 
   const bottomMenuItems = [

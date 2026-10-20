@@ -24,6 +24,7 @@ import Complaints from './pages/superadmin/Complaints';
 import ComplaintDetails from './pages/superadmin/ComplaintDetails';
 import AdminProfile from './pages/superadmin/Profile';
 import Settings from './pages/superadmin/Settings';
+import WebsiteManagement from './pages/superadmin/WebsiteManagement';
 import Help from './pages/superadmin/Help';
 import PartnerBookings from './pages/partner/Bookings';
 import PartnerBookingDetails from './pages/partner/BookingDetails';
@@ -198,6 +199,7 @@ function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="location" element={<Location />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="website" element={<WebsiteManagement />} />
 
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<Settings />} />
