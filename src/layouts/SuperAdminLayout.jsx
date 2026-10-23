@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
   LayoutDashboard, 
@@ -16,7 +16,9 @@ import {
   LogOut,
   Menu,
   CalendarDays,
-  Globe
+  Globe,
+  Truck,
+  MessageSquareWarning
 } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,6 +29,7 @@ function cn(...inputs) {
 
 export default function SuperAdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { superAdminUser: user, superAdminLogout: logout } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -42,6 +45,8 @@ export default function SuperAdminLayout() {
     { name: 'Partners', icon: Handshake, path: '/superadmin/partners' },
     { name: 'Vehicles', icon: Car, path: '/superadmin/vehicles' },
     { name: 'Bookings', icon: CalendarDays, path: '/superadmin/bookings' },
+    { name: 'Fleet & Pricing', icon: Truck, path: '/superadmin/fleet' },
+    { name: 'Complaints', icon: MessageSquareWarning, path: '/superadmin/complaints' },
     { name: 'Operations', icon: Briefcase, path: '/superadmin/operations' },
     { name: 'Finance', icon: IndianRupee, path: '/superadmin/finance' },
     { name: 'Reports', icon: FileText, path: '/superadmin/reports' },
@@ -53,6 +58,10 @@ export default function SuperAdminLayout() {
     { name: 'Settings', icon: Settings, path: '/superadmin/settings' },
     { name: 'Help', icon: HelpCircle, path: '/superadmin/help' },
   ];
+
+  const currentPage = [...topMenuItems, ...bottomMenuItems].find((item) =>
+    location.pathname.startsWith(item.path)
+  )?.name || 'Overview';
 
   const SidebarLink = ({ item }) => (
     <NavLink
@@ -137,7 +146,7 @@ export default function SuperAdminLayout() {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl font-semibold text-gray-800 hidden sm:block">Overview</h2>
+            <h2 className="text-xl font-semibold text-gray-800 hidden sm:block">{currentPage}</h2>
           </div>
 
           <div className="flex items-center">

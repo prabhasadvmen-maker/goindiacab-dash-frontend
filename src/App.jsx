@@ -26,6 +26,7 @@ import AdminProfile from './pages/superadmin/Profile';
 import Settings from './pages/superadmin/Settings';
 import WebsiteManagement from './pages/superadmin/WebsiteManagement';
 import Help from './pages/superadmin/Help';
+import FleetManagement from './pages/superadmin/FleetManagement';
 import PartnerBookings from './pages/partner/Bookings';
 import PartnerBookingDetails from './pages/partner/BookingDetails';
 import PartnerTrips from './pages/partner/Trips';
@@ -200,6 +201,11 @@ function App() {
           <Route path="location" element={<Location />} />
           <Route path="reports" element={<Reports />} />
           <Route path="website" element={<WebsiteManagement />} />
+          <Route path="fleet" element={<FleetManagement />} />
+          <Route path="complaints">
+            <Route index element={<Complaints />} />
+            <Route path=":id" element={<ComplaintDetails />} />
+          </Route>
 
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<Settings />} />
