@@ -14,6 +14,8 @@ import {
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import SafeImage, { safeImageSrc } from '../../components/SafeImage';
+
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
@@ -159,9 +161,9 @@ export default function VehicleDetails() {
               {['front', 'back', 'left', 'right', 'interior'].map(angle => (
                  <div key={angle} className="space-y-2 group">
                     <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 relative">
-                       {vehicle.vehiclePhotos?.[angle] ? (
-                          <a href={vehicle.vehiclePhotos[angle]} target="_blank" rel="noreferrer" className="block w-full h-full">
-                             <img src={vehicle.vehiclePhotos[angle]} alt={angle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                       {safeImageSrc(vehicle.vehiclePhotos?.[angle]) ? (
+                          <a href={safeImageSrc(vehicle.vehiclePhotos[angle])} target="_blank" rel="noreferrer" className="block w-full h-full">
+                             <SafeImage src={vehicle.vehiclePhotos[angle]} alt={angle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           </a>
                        ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">

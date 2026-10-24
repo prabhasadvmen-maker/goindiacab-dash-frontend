@@ -1,69 +1,69 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useUserAuthStore } from './store/userAuthStore';
 
 // SuperAdmin Pages
-import Login from './pages/superadmin/Login';
-import SuperAdminLayout from './layouts/SuperAdminLayout';
-import Dashboard from './pages/superadmin/Dashboard';
-import Admin from './pages/superadmin/Admin';
-import PartnerApplications from './pages/superadmin/PartnerApplications';
-import PartnerApplicationReview from './pages/superadmin/PartnerApplicationReview';
-import Users from './pages/superadmin/Users';
-import Vehicles from './pages/superadmin/Vehicles';
-import VehicleDetails from './pages/superadmin/VehicleDetails';
-import Bookings from './pages/superadmin/Bookings';
-import BookingDetails from './pages/superadmin/BookingDetails';
-import Payments from './pages/superadmin/Payments';
-import Location from './pages/superadmin/Location';
-import Operations from './pages/superadmin/Operations';
-import Finance from './pages/superadmin/Finance';
-import Reports from './pages/superadmin/Reports';
-import Complaints from './pages/superadmin/Complaints';
-import ComplaintDetails from './pages/superadmin/ComplaintDetails';
-import AdminProfile from './pages/superadmin/Profile';
-import Settings from './pages/superadmin/Settings';
-import WebsiteManagement from './pages/superadmin/WebsiteManagement';
-import Help from './pages/superadmin/Help';
-import FleetManagement from './pages/superadmin/FleetManagement';
-import CouponManagement from './pages/superadmin/CouponManagement';
-import PartnerBookings from './pages/partner/Bookings';
-import PartnerBookingDetails from './pages/partner/BookingDetails';
-import PartnerTrips from './pages/partner/Trips';
-import PartnerEarnings from './pages/partner/Earnings';
-import PartnerVehicle from './pages/partner/Vehicle';
-import PartnerNotifications from './pages/partner/Notifications';
-import PartnerProfile from './pages/partner/Profile';
-import PartnerSupport from './pages/partner/Support';
-import PartnerSettings from './pages/partner/Settings';
+const Login = lazy(() => import('./pages/superadmin/Login'));
+const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'));
+const Dashboard = lazy(() => import('./pages/superadmin/Dashboard'));
+const Admin = lazy(() => import('./pages/superadmin/Admin'));
+const PartnerApplications = lazy(() => import('./pages/superadmin/PartnerApplications'));
+const PartnerApplicationReview = lazy(() => import('./pages/superadmin/PartnerApplicationReview'));
+const Users = lazy(() => import('./pages/superadmin/Users'));
+const Vehicles = lazy(() => import('./pages/superadmin/Vehicles'));
+const VehicleDetails = lazy(() => import('./pages/superadmin/VehicleDetails'));
+const Bookings = lazy(() => import('./pages/superadmin/Bookings'));
+const BookingDetails = lazy(() => import('./pages/superadmin/BookingDetails'));
+const Payments = lazy(() => import('./pages/superadmin/Payments'));
+const Location = lazy(() => import('./pages/superadmin/Location'));
+const Operations = lazy(() => import('./pages/superadmin/Operations'));
+const Finance = lazy(() => import('./pages/superadmin/Finance'));
+const Reports = lazy(() => import('./pages/superadmin/Reports'));
+const Complaints = lazy(() => import('./pages/superadmin/Complaints'));
+const ComplaintDetails = lazy(() => import('./pages/superadmin/ComplaintDetails'));
+const AdminProfile = lazy(() => import('./pages/superadmin/Profile'));
+const Settings = lazy(() => import('./pages/superadmin/Settings'));
+const WebsiteManagement = lazy(() => import('./pages/superadmin/WebsiteManagement'));
+const Help = lazy(() => import('./pages/superadmin/Help'));
+const FleetManagement = lazy(() => import('./pages/superadmin/FleetManagement'));
+const CouponManagement = lazy(() => import('./pages/superadmin/CouponManagement'));
+const PartnerBookings = lazy(() => import('./pages/partner/Bookings'));
+const PartnerBookingDetails = lazy(() => import('./pages/partner/BookingDetails'));
+const PartnerTrips = lazy(() => import('./pages/partner/Trips'));
+const PartnerEarnings = lazy(() => import('./pages/partner/Earnings'));
+const PartnerVehicle = lazy(() => import('./pages/partner/Vehicle'));
+const PartnerNotifications = lazy(() => import('./pages/partner/Notifications'));
+const PartnerProfile = lazy(() => import('./pages/partner/Profile'));
+const PartnerSupport = lazy(() => import('./pages/partner/Support'));
+const PartnerSettings = lazy(() => import('./pages/partner/Settings'));
 
 // Admin Pages
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './layouts/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
 // Partner Pages
-import PartnerLogin from './pages/partner/Login';
-import PartnerOnboarding from './pages/partner/Onboarding';
-import PartnerLayout from './layouts/PartnerLayout';
-import PartnerDashboard from './pages/partner/PartnerDashboard';
+const PartnerLogin = lazy(() => import('./pages/partner/Login'));
+const PartnerOnboarding = lazy(() => import('./pages/partner/Onboarding'));
+const PartnerLayout = lazy(() => import('./layouts/PartnerLayout'));
+const PartnerDashboard = lazy(() => import('./pages/partner/PartnerDashboard'));
 
 // User Pages
-import UserLayout from './layouts/UserLayout';
-import UserLogin from './pages/user/UserLogin';
-import UserDashboard from './pages/user/UserDashboard';
-import BookCab from './pages/user/BookCab';
-import MyBookings from './pages/user/MyBookings';
-import TrackTrip from './pages/user/TrackTrip';
-import UserProfile from './pages/user/Profile';
-import UserPayments from './pages/user/Payments';
-import Notifications from './pages/user/Notifications';
-import Support from './pages/user/Support';
-import UserSettings from './pages/user/Settings';
+const UserLayout = lazy(() => import('./layouts/UserLayout'));
+const UserLogin = lazy(() => import('./pages/user/UserLogin'));
+const UserDashboard = lazy(() => import('./pages/user/UserDashboard'));
+const BookCab = lazy(() => import('./pages/user/BookCab'));
+const MyBookings = lazy(() => import('./pages/user/MyBookings'));
+const TrackTrip = lazy(() => import('./pages/user/TrackTrip'));
+const UserProfile = lazy(() => import('./pages/user/Profile'));
+const UserPayments = lazy(() => import('./pages/user/Payments'));
+const Notifications = lazy(() => import('./pages/user/Notifications'));
+const Support = lazy(() => import('./pages/user/Support'));
+const UserSettings = lazy(() => import('./pages/user/Settings'));
 
 // Shared Pages
-import LoginSelector from './pages/LoginSelector';
+const LoginSelector = lazy(() => import('./pages/LoginSelector'));
 
 // Protected Route Wrapper for SuperAdmin
 const ProtectedSuperAdminRoute = ({ children }) => {
@@ -135,6 +135,7 @@ const ProtectedUserRoute = ({ children }) => {
 function App() {
   return (
     <Router>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Loading...</div>}>
       <Routes>
         {/* User Protected Routes */}
         <Route
@@ -282,6 +283,7 @@ function App() {
           <Route path="settings" element={<PartnerSettings />} />
         </Route>
       </Routes>
+      </Suspense>
     </Router>
   );
 }

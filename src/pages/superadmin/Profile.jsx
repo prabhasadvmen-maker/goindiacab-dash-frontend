@@ -156,6 +156,7 @@ export default function Profile() {
                 </div>
                 <input
                   type="password"
+                  autoComplete="new-password"
                   placeholder="Enter new password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}

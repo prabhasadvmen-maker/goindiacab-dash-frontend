@@ -20,6 +20,8 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+import SafeImage from '../../components/SafeImage';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Vehicles() {
@@ -209,11 +211,12 @@ export default function Vehicles() {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-4">
                         <div className="w-14 h-10 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 shrink-0 flex items-center justify-center">
-                          {v.vehiclePhotos?.front ? (
-                            <img src={v.vehiclePhotos.front} alt="Vehicle Front" className="w-full h-full object-cover" />
-                          ) : (
-                            <Car className="w-5 h-5 text-gray-300" />
-                          )}
+                          <SafeImage
+                            src={v.vehiclePhotos?.front}
+                            alt="Vehicle Front"
+                            className="w-full h-full object-cover"
+                            fallback={<Car className="w-5 h-5 text-gray-300" />}
+                          />
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">

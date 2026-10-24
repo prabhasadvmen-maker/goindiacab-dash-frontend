@@ -362,7 +362,7 @@ export default function AdminManagement() {
                     Password {isEditMode ? '(Leave blank to keep current)' : '*'}
                   </label>
                   <input 
-                    type="password" required={!isEditMode}
+                    type="password" autoComplete="new-password" required={!isEditMode}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
