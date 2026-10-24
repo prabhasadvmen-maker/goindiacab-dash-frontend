@@ -3,51 +3,90 @@ import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import {
   Car, Plus, Pencil, Trash2, X, Loader2, ToggleLeft, ToggleRight,
-  IndianRupee, Users, ArrowUpDown, Image, Package, ChevronDown, ChevronUp,
-  RefreshCw, AlertCircle, CheckCircle2, Truck
+  IndianRupee, Users, Package, ChevronDown, ChevronUp,
+  RefreshCw, AlertCircle, CheckCircle2, Truck, Info, MoreVertical, Eye
 } from 'lucide-react';
 import clsx from 'clsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE = `${API_URL}/api/admins/website`;
 
-const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent';
-const btnPrimary = 'inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg disabled:opacity-60 transition-colors';
-const btnDanger = 'inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors';
-const btnGhost = 'inline-flex items-center gap-2 border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors';
+const inputCls = 'w-full h-10 border border-gray-300 rounded-lg px-3 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition';
+const btnBase = 'inline-flex items-center justify-center gap-2 h-10 text-sm font-semibold px-4 rounded-lg whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
+const btnPrimary = `${btnBase} bg-amber-500 hover:bg-amber-600 text-white shadow-sm`;
+const btnDanger = `${btnBase} bg-red-500 hover:bg-red-600 text-white shadow-sm`;
+const btnGhost = `${btnBase} border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium`;
 
-function Field({ label, required, children }) {
+function Field({ label, required, hint, children }) {
   return (
     <label className="block">
-      <span className="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
+      <span className="text-xs font-semibold text-gray-600 mb-1.5 block">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
       {children}
+      {hint && <span className="text-xs text-gray-400 mt-1 block">{hint}</span>}
     </label>
   );
 }
 
-function Modal({ title, onClose, children, wide }) {
+function Section({ icon: Icon, title, subtitle, action, children }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+    <section className="rounded-xl border border-gray-200 bg-white">
+      <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-gray-100 bg-gray-50/60 rounded-t-xl">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-gray-900 leading-tight">{title}</h4>
+            {subtitle && <p className="text-xs text-gray-500 truncate">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function Modal({ title, subtitle, onClose, children, footer, wide }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-6" onClick={onClose}>
       <div
-        className={clsx('bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto', wide ? 'max-w-3xl' : 'max-w-lg')}
+        className={clsx('bg-white rounded-2xl shadow-2xl w-full max-h-[92vh] flex flex-col overflow-hidden', wide ? 'max-w-3xl' : 'max-w-md')}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100">
+        <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-100 shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 text-lg leading-tight truncate">{title}</h3>
+            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-700 p-1.5 -mr-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="flex-1 overflow-y-auto px-6 py-5 bg-gray-50/40">{children}</div>
+        {footer && <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white shrink-0">{footer}</div>}
       </div>
     </div>
   );
 }
 
+function VehicleImage({ src, alt, className }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);
+  if (!src || failed) {
+    return (
+      <div className="w-20 h-20 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
+        <Car className="w-9 h-9 text-amber-500" />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} onError={() => setFailed(true)} className={className} />;
+}
+
 const EMPTY_RULE = {
-  vehicleType: '', name: '', model: '', seats: 4, imageUrl: '',
+  vehicleType: '', name: '', model: '', seats: 4, bags: 2, rating: 0, fuelType: '', imageUrl: '',
   perKmOneway: '', perKmRound: '', minKmOneway: 250, minKmPerDay: 250,
   driverAllowance: 300, driverAllowancePerDay: 300, gstPercent: 5,
   sortOrder: 0, isActive: true, packages: [],
@@ -68,6 +107,7 @@ export default function FleetManagement() {
   const [form, setForm] = useState(EMPTY_RULE);
   const [selected, setSelected] = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [menuId, setMenuId] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -96,9 +136,32 @@ export default function FleetManagement() {
 
   const openAdd = () => { setForm({ ...EMPTY_RULE }); setModal('add'); };
   const openEdit = (rule) => { setForm({ ...rule, packages: rule.packages || [] }); setSelected(rule); setModal('edit'); };
+  const openView = (rule) => { setSelected(rule); setModal('view'); };
   const openDelete = (rule) => { setSelected(rule); setModal('delete'); };
 
   const handleChange = (field, val) => setForm((f) => ({ ...f, [field]: val }));
+
+  // Resize to max 800px and keep as a data URL; the backend uploads it to R2 on save.
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        handleChange('imageUrl', canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => showToast('Could not read image', 'error');
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handlePackageChange = (idx, field, val) => {
     const pkgs = [...form.packages];
@@ -127,6 +190,8 @@ export default function FleetManagement() {
         gstPercent: Number(form.gstPercent),
         sortOrder: Number(form.sortOrder),
         seats: Number(form.seats),
+        bags: Number(form.bags) || 0,
+        rating: Number(form.rating) || 0,
         packages: form.packages.map((p) => ({
           ...p,
           hours: Number(p.hours),
@@ -178,8 +243,9 @@ export default function FleetManagement() {
   };
 
   const handleSeedDefaults = async () => {
+    if (!window.confirm('Seed default vehicle types? (Hatchback, Sedan, SUV, Innova — only adds missing ones)')) return;
     try {
-      const { data } = await api('post', '/../seed-defaults'.replace('/../', '/').replace('/seed-defaults', '').concat('/seed-defaults'));
+      const { data } = await api('post', '/seed-defaults');
       showToast(data.message || 'Defaults seeded!');
       fetchRules();
     } catch (err) {
@@ -187,12 +253,30 @@ export default function FleetManagement() {
     }
   };
 
+  const avgRate = rules.length ? Math.round(rules.reduce((s, r) => s + Number(r.perKmOneway || 0), 0) / rules.length) : 0;
+  const stats = [
+    { label: 'Total Types', value: rules.length, icon: Car, tone: 'bg-blue-100 text-blue-600' },
+    { label: 'Active', value: rules.filter((r) => r.isActive).length, icon: ToggleRight, tone: 'bg-green-100 text-green-600' },
+    { label: 'Inactive', value: rules.filter((r) => !r.isActive).length, icon: ToggleLeft, tone: 'bg-red-100 text-red-600' },
+    { label: 'Avg. Rate/km', value: `₹${avgRate}`, icon: IndianRupee, tone: 'bg-amber-100 text-amber-600' },
+  ];
+
+  const formFooter = (
+    <>
+      <button onClick={() => setModal(null)} className={btnGhost}>Cancel</button>
+      <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+        {modal === 'add' ? 'Add Vehicle Type' : 'Save Changes'}
+      </button>
+    </>
+  );
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
       {/* Toast */}
       {toast && (
         <div className={clsx(
-          'fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl text-sm font-semibold animate-fade-in',
+          'fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold',
           toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
         )}>
           {toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -201,33 +285,25 @@ export default function FleetManagement() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-              <Truck className="w-5 h-5 text-amber-600" />
-            </div>
-            Fleet & Pricing Management
-          </h2>
-          <p className="text-gray-500 mt-1 text-sm">
-            Manage vehicle types and pricing for the <span className="font-semibold text-amber-600">website booking flow</span>.
-            Changes reflect on the website immediately.
-          </p>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white px-5 py-4 md:px-6 md:py-5 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+            <Truck className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Fleet &amp; Pricing Management</h2>
+            <p className="text-gray-500 mt-1 text-sm">
+              Manage vehicle types and pricing for the <span className="font-semibold text-amber-600">website booking flow</span>. Changes reflect on the website immediately.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap lg:flex-nowrap shrink-0">
           <button onClick={fetchRules} className={btnGhost}>
-            <RefreshCw className="w-4 h-4" /> Refresh
+            <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} /> Refresh
           </button>
           {canWrite && (
             <>
-              <button
-                onClick={async () => {
-                  if (window.confirm('Seed default vehicle types? (Hatchback, Sedan, SUV, Innova — safe, only adds missing ones)')) {
-                    await handleSeedDefaults();
-                  }
-                }}
-                className={clsx(btnGhost, 'border-amber-300 text-amber-700 hover:bg-amber-50')}
-              >
+              <button onClick={handleSeedDefaults} className={clsx(btnGhost, 'border-amber-300 text-amber-700 hover:bg-amber-50')}>
                 <Package className="w-4 h-4" /> Seed Defaults
               </button>
               <button onClick={openAdd} className={btnPrimary}>
@@ -238,27 +314,16 @@ export default function FleetManagement() {
         </div>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Types', value: rules.length, icon: Car, color: 'blue' },
-          { label: 'Active', value: rules.filter((r) => r.isActive).length, icon: ToggleRight, color: 'green' },
-          { label: 'Inactive', value: rules.filter((r) => !r.isActive).length, icon: ToggleLeft, color: 'red' },
-          { label: 'Avg. Rate/km', value: `₹${rules.length ? Math.round(rules.reduce((s, r) => s + r.perKmOneway, 0) / rules.length) : 0}`, icon: IndianRupee, color: 'amber' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
-            <div className={clsx(
-              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-              stat.color === 'blue' && 'bg-blue-100 text-blue-600',
-              stat.color === 'green' && 'bg-green-100 text-green-600',
-              stat.color === 'red' && 'bg-red-100 text-red-600',
-              stat.color === 'amber' && 'bg-amber-100 text-amber-600',
-            )}>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-center gap-3.5">
+            <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', stat.tone)}>
               <stat.icon className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
-              <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-xl font-bold text-gray-900 leading-tight">{stat.value}</p>
             </div>
           </div>
         ))}
@@ -270,14 +335,21 @@ export default function FleetManagement() {
           <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         </div>
       ) : rules.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center">
-          <Car className="w-14 h-14 text-gray-300 mx-auto mb-4" />
-          <p className="text-lg font-semibold text-gray-700">No vehicle types found</p>
+        <div className="bg-white rounded-2xl border border-dashed border-gray-300 px-6 py-14 text-center">
+          <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
+            <Car className="w-8 h-8 text-gray-300" />
+          </div>
+          <p className="text-lg font-semibold text-gray-800">No vehicle types found</p>
           <p className="text-sm text-gray-500 mt-1 mb-6">Add your first vehicle type or seed defaults to get started.</p>
           {canWrite && (
-            <button onClick={openAdd} className={btnPrimary}>
-              <Plus className="w-4 h-4" /> Add Vehicle Type
-            </button>
+            <div className="flex justify-center gap-3 flex-wrap">
+              <button onClick={handleSeedDefaults} className={btnGhost}>
+                <Package className="w-4 h-4" /> Seed Defaults
+              </button>
+              <button onClick={openAdd} className={btnPrimary}>
+                <Plus className="w-4 h-4" /> Add Vehicle Type
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -286,48 +358,61 @@ export default function FleetManagement() {
             <div
               key={rule._id}
               className={clsx(
-                'bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md',
-                rule.isActive ? 'border-gray-100' : 'border-dashed border-gray-300 opacity-60'
+                'relative bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md flex flex-col',
+                rule.isActive ? 'border-gray-100' : 'border-dashed border-gray-300'
               )}
             >
-              {/* Card Header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-50">
-                <div className="flex items-center gap-3">
-                  {rule.imageUrl ? (
-                    <img src={rule.imageUrl} alt={rule.name} className="w-12 h-12 rounded-xl object-contain bg-gray-50 border border-gray-100 p-1" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
-                      <Car className="w-6 h-6 text-amber-500" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold text-gray-900">{rule.name}</h3>
-                    <p className="text-xs text-gray-400">{rule.model || 'No model specified'}</p>
-                  </div>
+              <div className={clsx('relative bg-gradient-to-br from-gray-50 to-amber-50/40 border-b border-gray-100 rounded-t-2xl overflow-hidden', !rule.isActive && 'opacity-60')}>
+                <div className="h-44 flex items-center justify-center">
+                  <VehicleImage src={rule.imageUrl} alt={rule.name} className="w-full h-full object-cover" />
                 </div>
-                <div className="flex items-center gap-1">
-                  {canWrite && (
+                <span className={clsx(
+                  'absolute top-3 left-3 px-2.5 py-1 text-xs font-semibold rounded-full',
+                  rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                )}>
+                  {rule.isActive ? '● Active' : '○ Inactive'}
+                </span>
+              </div>
+              {canWrite && (
+                <div className="absolute top-2.5 right-2.5 z-10">
+                  <button
+                    onClick={() => setMenuId(menuId === rule._id ? null : rule._id)}
+                    title="Actions"
+                    className="p-1.5 rounded-lg bg-white/90 border border-gray-200 hover:bg-white text-gray-500 hover:text-gray-800 shadow-sm transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {menuId === rule._id && (
                     <>
-                      <button
-                        onClick={() => handleToggleActive(rule)}
-                        title={rule.isActive ? 'Deactivate' : 'Activate'}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
-                      >
-                        {rule.isActive ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5" />}
-                      </button>
-                      <button onClick={() => openEdit(rule)} className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => openDelete(rule)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
+                      <div className="absolute right-0 mt-1.5 w-44 bg-white rounded-xl border border-gray-100 shadow-xl py-1.5 z-20">
+                        <button onClick={() => { setMenuId(null); openView(rule); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <Eye className="w-4 h-4 text-gray-400" /> View
+                        </button>
+                        <button onClick={() => { setMenuId(null); openEdit(rule); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <Pencil className="w-4 h-4 text-blue-500" /> Edit
+                        </button>
+                        <button onClick={() => { setMenuId(null); handleToggleActive(rule); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          {rule.isActive
+                            ? <><ToggleLeft className="w-4 h-4 text-gray-400" /> Disable</>
+                            : <><ToggleRight className="w-4 h-4 text-green-500" /> Enable</>}
+                        </button>
+                        <div className="my-1 border-t border-gray-100" />
+                        <button onClick={() => { setMenuId(null); openDelete(rule); }} className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" /> Delete
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
+              )}
+
+              <div className={clsx('px-4 pt-4', !rule.isActive && 'opacity-60')}>
+                <h3 className="font-bold text-gray-900 text-lg leading-tight">{rule.name}</h3>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{rule.model || 'No model specified'}</p>
               </div>
 
-              {/* Pricing Grid */}
-              <div className="p-5 space-y-4">
+              <div className={clsx('p-4 pt-3 space-y-4 flex-1 flex flex-col', !rule.isActive && 'opacity-60')}>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-blue-50 rounded-xl p-3">
                     <p className="text-xs text-blue-500 font-medium mb-0.5">One Way</p>
@@ -341,19 +426,12 @@ export default function FleetManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" /> {rule.seats} seats
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <IndianRupee className="w-3.5 h-3.5" /> Driver ₹{rule.driverAllowance}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    GST {rule.gstPercent}%
-                  </span>
+                <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {rule.seats} seats</span>
+                  <span className="flex items-center gap-1"><IndianRupee className="w-3.5 h-3.5" /> Driver ₹{rule.driverAllowance}</span>
+                  <span>GST {rule.gstPercent}%</span>
                 </div>
 
-                {/* Local Packages */}
                 {rule.packages?.length > 0 && (
                   <div>
                     <button
@@ -367,7 +445,7 @@ export default function FleetManagement() {
                     {expanded === rule._id && (
                       <div className="mt-2 space-y-1.5">
                         {rule.packages.map((pkg, i) => (
-                          <div key={i} className="flex items-center justify-between bg-amber-50/50 rounded-lg px-3 py-2 border border-amber-100">
+                          <div key={i} className="flex items-center justify-between bg-amber-50/60 rounded-lg px-3 py-2 border border-amber-100">
                             <span className="text-xs font-medium text-gray-700">{pkg.label}</span>
                             <span className="text-xs font-bold text-amber-700">₹{pkg.price}</span>
                           </div>
@@ -377,17 +455,8 @@ export default function FleetManagement() {
                   </div>
                 )}
 
-                {/* Type badge */}
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-md">
-                    {rule.vehicleType}
-                  </span>
-                  <span className={clsx(
-                    'px-2 py-1 text-xs font-semibold rounded-full',
-                    rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                  )}>
-                    {rule.isActive ? '● Active' : '○ Inactive'}
-                  </span>
+                <div className="flex items-center justify-between mt-auto pt-1">
+                  <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-md">{rule.vehicleType}</span>
                 </div>
               </div>
             </div>
@@ -397,171 +466,240 @@ export default function FleetManagement() {
 
       {/* ─── Add / Edit Modal ─── */}
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Add New Vehicle Type' : `Edit — ${selected?.name}`} onClose={() => setModal(null)} wide>
+        <Modal
+          wide
+          title={modal === 'add' ? 'Add New Vehicle Type' : `Edit ${selected?.name || 'Vehicle Type'}`}
+          subtitle="Fields marked * are required"
+          onClose={() => setModal(null)}
+          footer={formFooter}
+        >
           <div className="space-y-5">
-            {/* Basic Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Vehicle Type ID" required>
-                <input
-                  value={form.vehicleType}
-                  onChange={(e) => handleChange('vehicleType', e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                  placeholder="sedan, suv, hatchback..."
-                  className={inputCls}
-                  disabled={modal === 'edit'}
-                />
-                <p className="text-xs text-gray-400 mt-1">Unique ID (lowercase, no spaces). Cannot be changed after creation.</p>
-              </Field>
-              <Field label="Display Name" required>
-                <input value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Sedan" className={inputCls} />
-              </Field>
-              <Field label="Model Description">
-                <input value={form.model} onChange={(e) => handleChange('model', e.target.value)} placeholder="Dzire, Etios or similar" className={inputCls} />
-              </Field>
-              <Field label="Seating Capacity">
-                <input type="number" value={form.seats} onChange={(e) => handleChange('seats', e.target.value)} min={1} max={50} className={inputCls} />
-              </Field>
-              <Field label="Image URL">
-                <input value={form.imageUrl} onChange={(e) => handleChange('imageUrl', e.target.value)} placeholder="https://..." className={inputCls} />
-              </Field>
-              <Field label="Sort Order">
-                <input type="number" value={form.sortOrder} onChange={(e) => handleChange('sortOrder', e.target.value)} min={0} className={inputCls} />
-              </Field>
-            </div>
+            <Section icon={Car} title="Vehicle Details" subtitle="How this vehicle appears on the website">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Vehicle Type ID" required hint={modal === 'edit' ? 'Cannot be changed after creation.' : 'Unique ID — lowercase, no spaces.'}>
+                  <input
+                    value={form.vehicleType}
+                    onChange={(e) => handleChange('vehicleType', e.target.value.toLowerCase().replace(/\s+/g, ''))}
+                    placeholder="sedan, suv, hatchback"
+                    className={inputCls}
+                    disabled={modal === 'edit'}
+                  />
+                </Field>
+                <Field label="Display Name" required>
+                  <input value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Sedan" className={inputCls} />
+                </Field>
+                <Field label="Model Description">
+                  <input value={form.model} onChange={(e) => handleChange('model', e.target.value)} placeholder="Dzire, Etios or similar" className={inputCls} />
+                </Field>
+                <Field label="Seating Capacity">
+                  <input type="number" value={form.seats} onChange={(e) => handleChange('seats', e.target.value)} min={1} max={50} className={inputCls} />
+                </Field>
+                <Field label="Luggage Capacity (bags)">
+                  <input type="number" value={form.bags} onChange={(e) => handleChange('bags', e.target.value)} min={0} max={30} className={inputCls} />
+                </Field>
+                <Field label="Rating" hint="0 hides the rating on the website.">
+                  <input type="number" value={form.rating} onChange={(e) => handleChange('rating', e.target.value)} min={0} max={5} step={0.1} className={inputCls} />
+                </Field>
+                <Field label="Fuel Type" hint="Shown as a filter on the website.">
+                  <select value={form.fuelType || ''} onChange={(e) => handleChange('fuelType', e.target.value)} className={inputCls}>
+                    <option value="">Not specified</option>
+                    {['Petrol', 'Diesel', 'CNG', 'Electric'].map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </Field>
+                <Field label="Vehicle Image" hint="PNG/JPG, auto-resized.">
+                  <div className="flex items-center gap-3">
+                    {form.imageUrl && (
+                      <img src={form.imageUrl} alt="Preview" className="w-12 h-12 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1 shrink-0" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="w-full text-sm text-gray-600 file:mr-3 file:h-10 file:px-4 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 file:font-semibold hover:file:bg-amber-100"
+                    />
+                  </div>
+                </Field>
+                <Field label="Sort Order" hint="Lower numbers appear first.">
+                  <input type="number" value={form.sortOrder} onChange={(e) => handleChange('sortOrder', e.target.value)} min={0} className={inputCls} />
+                </Field>
+              </div>
+            </Section>
 
-            {/* Pricing */}
-            <div className="border-t pt-5">
-              <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <IndianRupee className="w-4 h-4 text-amber-500" /> Pricing Configuration
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Section icon={IndianRupee} title="Pricing Configuration" subtitle="Per-km rates, minimums and allowances">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="₹/km One Way" required>
-                  <input type="number" value={form.perKmOneway} onChange={(e) => handleChange('perKmOneway', e.target.value)} placeholder="13" className={inputCls} />
+                  <input type="number" value={form.perKmOneway} onChange={(e) => handleChange('perKmOneway', e.target.value)} placeholder="13" min={0} className={inputCls} />
                 </Field>
                 <Field label="₹/km Round Trip" required>
-                  <input type="number" value={form.perKmRound} onChange={(e) => handleChange('perKmRound', e.target.value)} placeholder="12" className={inputCls} />
+                  <input type="number" value={form.perKmRound} onChange={(e) => handleChange('perKmRound', e.target.value)} placeholder="12" min={0} className={inputCls} />
                 </Field>
                 <Field label="Min KM (One Way)">
-                  <input type="number" value={form.minKmOneway} onChange={(e) => handleChange('minKmOneway', e.target.value)} className={inputCls} />
+                  <input type="number" value={form.minKmOneway} onChange={(e) => handleChange('minKmOneway', e.target.value)} min={0} className={inputCls} />
                 </Field>
-                <Field label="Min KM/Day (Round)">
-                  <input type="number" value={form.minKmPerDay} onChange={(e) => handleChange('minKmPerDay', e.target.value)} className={inputCls} />
+                <Field label="Min KM / Day (Round Trip)">
+                  <input type="number" value={form.minKmPerDay} onChange={(e) => handleChange('minKmPerDay', e.target.value)} min={0} className={inputCls} />
                 </Field>
-                <Field label="Driver Allowance (OW)">
-                  <input type="number" value={form.driverAllowance} onChange={(e) => handleChange('driverAllowance', e.target.value)} className={inputCls} />
+                <Field label="Driver Allowance (One Way)">
+                  <input type="number" value={form.driverAllowance} onChange={(e) => handleChange('driverAllowance', e.target.value)} min={0} className={inputCls} />
                 </Field>
-                <Field label="Driver Allowance/Day (RT)">
-                  <input type="number" value={form.driverAllowancePerDay} onChange={(e) => handleChange('driverAllowancePerDay', e.target.value)} className={inputCls} />
+                <Field label="Driver Allowance / Day (Round Trip)">
+                  <input type="number" value={form.driverAllowancePerDay} onChange={(e) => handleChange('driverAllowancePerDay', e.target.value)} min={0} className={inputCls} />
                 </Field>
                 <Field label="GST %">
                   <input type="number" value={form.gstPercent} onChange={(e) => handleChange('gstPercent', e.target.value)} min={0} max={30} className={inputCls} />
                 </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Local Packages */}
-            <div className="border-t pt-5">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-amber-500" /> Local / Rental Packages
-                  <span className="text-xs font-normal text-gray-400">(Optional — for local/hourly trips)</span>
-                </h4>
-                <button type="button" onClick={addPackage} className={clsx(btnGhost, 'text-xs px-3 py-1.5')}>
+            <Section
+              icon={Package}
+              title="Local / Rental Packages"
+              subtitle="Optional — for local and hourly trips"
+              action={
+                <button type="button" onClick={addPackage} className={clsx(btnGhost, 'h-8 text-xs px-3')}>
                   <Plus className="w-3.5 h-3.5" /> Add Package
                 </button>
-              </div>
+              }
+            >
               {form.packages.length === 0 ? (
-                <p className="text-sm text-gray-400 italic text-center py-4 border border-dashed rounded-lg">No packages added. Click "Add Package" to include local/rental options.</p>
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-400 py-5 border border-dashed border-gray-200 rounded-lg">
+                  <Info className="w-4 h-4" /> No packages yet. Click “Add Package” to add one.
+                </div>
               ) : (
                 <div className="space-y-3">
                   {form.packages.map((pkg, idx) => (
-                    <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50/50 relative">
-                      <button
-                        type="button"
-                        onClick={() => removePackage(idx)}
-                        className="absolute top-3 right-3 text-gray-400 hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Package {idx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removePackage(idx)}
+                          title="Remove package"
+                          className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <Field label="Label">
-                          <input value={pkg.label} onChange={(e) => handlePackageChange(idx, 'label', e.target.value)} placeholder="8 Hrs / 80 Km" className={inputCls} />
-                        </Field>
+                        <div className="col-span-2 md:col-span-3">
+                          <Field label="Label">
+                            <input value={pkg.label} onChange={(e) => handlePackageChange(idx, 'label', e.target.value)} placeholder="8 Hrs / 80 Km" className={inputCls} />
+                          </Field>
+                        </div>
                         <Field label="Hours">
-                          <input type="number" value={pkg.hours} onChange={(e) => handlePackageChange(idx, 'hours', e.target.value)} className={inputCls} />
+                          <input type="number" value={pkg.hours} onChange={(e) => handlePackageChange(idx, 'hours', e.target.value)} min={0} className={inputCls} />
                         </Field>
                         <Field label="KM Included">
-                          <input type="number" value={pkg.km} onChange={(e) => handlePackageChange(idx, 'km', e.target.value)} className={inputCls} />
+                          <input type="number" value={pkg.km} onChange={(e) => handlePackageChange(idx, 'km', e.target.value)} min={0} className={inputCls} />
                         </Field>
                         <Field label="Price (₹)">
-                          <input type="number" value={pkg.price} onChange={(e) => handlePackageChange(idx, 'price', e.target.value)} placeholder="2200" className={inputCls} />
+                          <input type="number" value={pkg.price} onChange={(e) => handlePackageChange(idx, 'price', e.target.value)} placeholder="2200" min={0} className={inputCls} />
                         </Field>
                         <Field label="Extra ₹/km">
-                          <input type="number" value={pkg.extraKmRate} onChange={(e) => handlePackageChange(idx, 'extraKmRate', e.target.value)} className={inputCls} />
+                          <input type="number" value={pkg.extraKmRate} onChange={(e) => handlePackageChange(idx, 'extraKmRate', e.target.value)} min={0} className={inputCls} />
                         </Field>
                         <Field label="Extra ₹/hr">
-                          <input type="number" value={pkg.extraHourRate} onChange={(e) => handlePackageChange(idx, 'extraHourRate', e.target.value)} className={inputCls} />
+                          <input type="number" value={pkg.extraHourRate} onChange={(e) => handlePackageChange(idx, 'extraHourRate', e.target.value)} min={0} className={inputCls} />
                         </Field>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </Section>
 
-            {/* Active Toggle */}
-            <div className="flex items-center gap-3 pt-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <div
-                  onClick={() => handleChange('isActive', !form.isActive)}
-                  className={clsx(
-                    'w-11 h-6 rounded-full relative transition-colors cursor-pointer',
-                    form.isActive ? 'bg-green-500' : 'bg-gray-300'
-                  )}
-                >
-                  <div className={clsx(
-                    'w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow',
-                    form.isActive ? 'left-5' : 'left-0.5'
-                  )} />
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {form.isActive ? 'Active (visible on website)' : 'Inactive (hidden from website)'}
-                </span>
-              </label>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <button onClick={() => setModal(null)} className={btnGhost}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className={btnPrimary}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                {modal === 'add' ? 'Add Vehicle Type' : 'Save Changes'}
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{form.isActive ? 'Active' : 'Inactive'}</p>
+                <p className="text-xs text-gray-500">{form.isActive ? 'Visible on the website booking flow' : 'Hidden from the website'}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.isActive}
+                onClick={() => handleChange('isActive', !form.isActive)}
+                className={clsx('w-11 h-6 rounded-full relative transition-colors shrink-0', form.isActive ? 'bg-green-500' : 'bg-gray-300')}
+              >
+                <span className={clsx('w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow', form.isActive ? 'left-[22px]' : 'left-0.5')} />
               </button>
             </div>
           </div>
         </Modal>
       )}
 
+      {/* ─── View Modal ─── */}
+      {modal === 'view' && selected && (
+        <Modal
+          title={selected.name}
+          subtitle={selected.vehicleType}
+          onClose={() => setModal(null)}
+          footer={
+            <>
+              <button onClick={() => setModal(null)} className={btnGhost}>Close</button>
+              {canWrite && <button onClick={() => openEdit(selected)} className={btnPrimary}><Pencil className="w-4 h-4" /> Edit</button>}
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="h-44 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <VehicleImage src={selected.imageUrl} alt={selected.name} className="max-h-full max-w-full object-contain" />
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              {[
+                ['Model', selected.model || '—'],
+                ['Seats', selected.seats],
+                ['₹/km One Way', `₹${selected.perKmOneway}`],
+                ['₹/km Round Trip', `₹${selected.perKmRound}`],
+                ['Min KM (One Way)', `${selected.minKmOneway} km`],
+                ['Min KM / Day', `${selected.minKmPerDay} km`],
+                ['Driver Allowance', `₹${selected.driverAllowance}`],
+                ['Driver Allowance / Day', `₹${selected.driverAllowancePerDay}`],
+                ['GST', `${selected.gstPercent}%`],
+                ['Status', selected.isActive ? 'Active' : 'Inactive'],
+              ].map(([k, v]) => (
+                <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-semibold text-gray-900">{v}</dd></div>
+              ))}
+            </dl>
+            {selected.packages?.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Local Packages</p>
+                <div className="space-y-1.5">
+                  {selected.packages.map((pkg, i) => (
+                    <div key={i} className="flex items-center justify-between bg-amber-50/60 rounded-lg px-3 py-2 border border-amber-100">
+                      <span className="text-xs font-medium text-gray-700">{pkg.label} · {pkg.hours}h / {pkg.km}km</span>
+                      <span className="text-xs font-bold text-amber-700">₹{pkg.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {/* ─── Delete Modal ─── */}
       {modal === 'delete' && (
-        <Modal title="Delete Vehicle Type" onClose={() => setModal(null)}>
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 className="w-8 h-8 text-red-500" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 text-lg">Delete "{selected?.name}"?</p>
-              <p className="text-sm text-gray-500 mt-1">
-                This will remove <strong>{selected?.vehicleType}</strong> from the website booking options.
-                Any existing bookings with this vehicle type will not be affected.
-              </p>
-            </div>
-            <div className="flex gap-3 justify-center pt-2">
+        <Modal
+          title="Delete Vehicle Type"
+          onClose={() => setModal(null)}
+          footer={
+            <>
               <button onClick={() => setModal(null)} className={btnGhost}>Cancel</button>
               <button onClick={handleDelete} disabled={saving} className={btnDanger}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Delete Vehicle Type
+                Delete
               </button>
+            </>
+          }
+        >
+          <div className="text-center space-y-3 py-2">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7 text-red-500" />
             </div>
+            <p className="font-semibold text-gray-900 text-lg">Delete “{selected?.name}”?</p>
+            <p className="text-sm text-gray-500">
+              This removes <strong>{selected?.vehicleType}</strong> from the website booking options. Existing bookings with this vehicle type are not affected.
+            </p>
           </div>
         </Modal>
       )}

@@ -255,7 +255,7 @@ export default function Operations() {
                           </div>
                           <div className="flex items-start">
                             <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 mr-2 shrink-0"></div>
-                            <p className="text-xs text-gray-900 font-medium truncate" title={booking.dropoff.address}>{booking.dropoff.address}</p>
+                            <p className="text-xs text-gray-900 font-medium truncate" title={booking.drop?.address}>{booking.drop?.address}</p>
                           </div>
                           <div className="text-xs text-gray-400 pl-4">{new Date(booking.createdAt).toLocaleString()}</div>
                         </div>

@@ -27,6 +27,7 @@ import Settings from './pages/superadmin/Settings';
 import WebsiteManagement from './pages/superadmin/WebsiteManagement';
 import Help from './pages/superadmin/Help';
 import FleetManagement from './pages/superadmin/FleetManagement';
+import CouponManagement from './pages/superadmin/CouponManagement';
 import PartnerBookings from './pages/partner/Bookings';
 import PartnerBookingDetails from './pages/partner/BookingDetails';
 import PartnerTrips from './pages/partner/Trips';
@@ -202,6 +203,7 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="website" element={<WebsiteManagement />} />
           <Route path="fleet" element={<FleetManagement />} />
+          <Route path="coupons" element={<CouponManagement />} />
           <Route path="complaints">
             <Route index element={<Complaints />} />
             <Route path=":id" element={<ComplaintDetails />} />

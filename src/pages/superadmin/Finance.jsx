@@ -59,7 +59,7 @@ export default function Finance() {
       });
       if (data.success) {
         setTransactions(data.data);
-        setTotalPages(data.pagination.totalPages);
+        setTotalPages(data.pagination?.totalPages || 1);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);

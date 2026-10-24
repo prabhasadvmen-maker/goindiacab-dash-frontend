@@ -201,7 +201,7 @@ export default function Complaints() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link 
-                        to={`/admin/complaints/${complaint._id}`}
+                        to={`/superadmin/complaints/${complaint._id}`}
                         className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-50 hover:text-gray-900 transition-colors"
                       >
                         Review

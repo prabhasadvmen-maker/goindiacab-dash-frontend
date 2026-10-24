@@ -18,7 +18,8 @@ import { useAuthStore } from '../../store/authStore';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Dashboard() {
-  const { adminToken } = useAuthStore();
+  const { superAdminToken, adminToken } = useAuthStore();
+  const token = superAdminToken || adminToken;
   
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -43,12 +44,12 @@ export default function Dashboard() {
     try {
       // Fetch macro stats
       const statsRes = await axios.get(`${API_URL}/api/admins/dashboard-stats`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Fetch chart analytics (last 7 days)
       const analyticsRes = await axios.get(`${API_URL}/api/admins/reports/analytics?days=7`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (statsRes.data.success) {

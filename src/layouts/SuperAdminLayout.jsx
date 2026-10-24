@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Globe,
   Truck,
+  Ticket,
   MessageSquareWarning
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -46,6 +47,7 @@ export default function SuperAdminLayout() {
     { name: 'Vehicles', icon: Car, path: '/superadmin/vehicles' },
     { name: 'Bookings', icon: CalendarDays, path: '/superadmin/bookings' },
     { name: 'Fleet & Pricing', icon: Truck, path: '/superadmin/fleet' },
+    { name: 'Coupons', icon: Ticket, path: '/superadmin/coupons' },
     { name: 'Complaints', icon: MessageSquareWarning, path: '/superadmin/complaints' },
     { name: 'Operations', icon: Briefcase, path: '/superadmin/operations' },
     { name: 'Finance', icon: IndianRupee, path: '/superadmin/finance' },
