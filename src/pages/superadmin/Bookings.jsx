@@ -270,6 +270,7 @@ function WebsiteBookings({ token }) {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [detailModal, setDetailModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -299,24 +300,37 @@ function WebsiteBookings({ token }) {
   };
 
   const handleStatusUpdate = async (bookingId, newStatus) => {
+    let reason;
+    if (newStatus === 'cancelled') {
+      reason = window.prompt('Reason for cancellation (shown to the customer in the email):', '');
+      if (reason === null) return;
+    }
     setUpdatingStatus(true);
+    setNotice(null);
     try {
-      await axios.patch(`${API_URL}/api/admins/website/bookings/${bookingId}`,
-        { status: newStatus },
+      const { data } = await axios.patch(`${API_URL}/api/admins/website/bookings/${bookingId}`,
+        { status: newStatus, ...(reason !== undefined ? { cancelReason: reason } : {}) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchBookings();
       if (selectedBooking?.bookingId === bookingId) {
-        setSelectedBooking((prev) => ({ ...prev, status: newStatus }));
+        setSelectedBooking((prev) => ({ ...prev, ...data.data, status: newStatus }));
       }
+      const mail = data.email;
+      if (mail?.emailSent) setNotice({ type: 'success', text: `Status updated. Email sent to ${data.data?.passenger?.email}.` });
+      else if (mail?.skipped === 'no_email') setNotice({ type: 'warn', text: 'Status updated. No email sent: customer did not give an email address.' });
+      else if (mail) setNotice({ type: 'warn', text: 'Status updated, but the email could not be sent. Check EMAIL_ENABLED and Brevo settings on the server.' });
+      else setNotice({ type: 'success', text: 'Status updated.' });
     } catch (err) {
       console.error('Status update failed:', err);
+      setNotice({ type: 'error', text: err.response?.data?.message || 'Could not update the status. Please try again.' });
     } finally {
       setUpdatingStatus(false);
     }
   };
 
   const openDetail = async (booking) => {
+    setNotice(null);
     setSelectedBooking(booking);
     setDetailModal(true);
     try {
@@ -519,7 +533,13 @@ function WebsiteBookings({ token }) {
                   <div><p className="text-xs text-blue-500">Name</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.name}</p></div>
                   <div><p className="text-xs text-blue-500">Mobile</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.mobile}</p></div>
                   <div><p className="text-xs text-blue-500">Email</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.email || '—'}</p></div>
-                  <div><p className="text-xs text-blue-500">Pickup Address</p><p className="font-semibold text-gray-900 text-xs">{selectedBooking.passenger?.pickupAddress}</p></div>
+                  <div className="col-span-2"><p className="text-xs text-blue-500">Pickup Address</p><p className="font-semibold text-gray-900 text-sm">{selectedBooking.passenger?.pickupAddress || '—'}</p></div>
+                  {selectedBooking.passenger?.dropAddress && (
+                    <div className="col-span-2"><p className="text-xs text-blue-500">Drop Address</p><p className="font-semibold text-gray-900 text-sm">{selectedBooking.passenger.dropAddress}</p></div>
+                  )}
+                  {selectedBooking.passenger?.instructions && (
+                    <div className="col-span-2"><p className="text-xs text-blue-500">Special Instructions</p><p className="font-semibold text-gray-900 text-sm">{selectedBooking.passenger.instructions}</p></div>
+                  )}
                 </div>
               </div>
 
@@ -529,10 +549,19 @@ function WebsiteBookings({ token }) {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><p className="text-xs text-amber-500">From</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.from}</p></div>
                   <div><p className="text-xs text-amber-500">To</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.to || 'Local'}</p></div>
+                  {selectedBooking.trip?.stop && (
+                    <div><p className="text-xs text-amber-500">Stop</p><p className="font-semibold text-gray-900">{selectedBooking.trip.stop}</p></div>
+                  )}
                   <div><p className="text-xs text-amber-500">Date & Time</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.date} at {selectedBooking.trip?.time}</p></div>
                   <div><p className="text-xs text-amber-500">Type</p><p className="font-semibold text-gray-900 capitalize">{selectedBooking.trip?.tripType}</p></div>
+                  {selectedBooking.trip?.package && (
+                    <div><p className="text-xs text-amber-500">Package</p><p className="font-semibold text-gray-900">{selectedBooking.trip.package}</p></div>
+                  )}
+                  {selectedBooking.trip?.tripType === 'roundtrip' && (
+                    <div><p className="text-xs text-amber-500">Days</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.days || 1}</p></div>
+                  )}
                   <div><p className="text-xs text-amber-500">Distance</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.distanceKm} km</p></div>
-                  <div><p className="text-xs text-amber-500">Vehicle</p><p className="font-semibold text-gray-900">{selectedBooking.vehicle?.name} — {selectedBooking.vehicle?.model}</p></div>
+                  <div><p className="text-xs text-amber-500">Vehicle</p><p className="font-semibold text-gray-900">{selectedBooking.vehicle?.name} — {selectedBooking.vehicle?.model}{selectedBooking.vehicle?.seats ? ` (${selectedBooking.vehicle.seats} seats)` : ''}</p></div>
                 </div>
               </div>
 
@@ -545,21 +574,81 @@ function WebsiteBookings({ token }) {
                     ['Extra KM Fare', selectedBooking.fare?.extraKmFare],
                     ['Driver Allowance', selectedBooking.fare?.driverAllowance],
                     ['GST', selectedBooking.fare?.gst],
+                    ...(selectedBooking.fare?.discount > 0
+                      ? [[`Coupon Discount${selectedBooking.fare.couponCode ? ` (${selectedBooking.fare.couponCode})` : ''}`, -selectedBooking.fare.discount]]
+                      : []),
                     ['Total', selectedBooking.fare?.total],
                     ['Paid Now', selectedBooking.fare?.paidNow],
-                    ['Pay Later', selectedBooking.fare?.payLater],
+                    ['Pay Later (to driver)', selectedBooking.fare?.payLater],
                   ].map(([label, val]) => (
                     <div key={label} className={cn('flex justify-between', label === 'Total' && 'font-bold border-t border-green-200 pt-1.5 mt-1.5')}>
                       <span className="text-green-700">{label}</span>
-                      <span className="text-gray-900">₹{val || 0}</span>
+                      <span className={cn(val < 0 ? 'text-green-700 font-semibold' : 'text-gray-900')}>{val < 0 ? '- ' : ''}₹{Math.abs(val || 0)}</span>
                     </div>
                   ))}
+                  <div className="flex justify-between pt-1.5">
+                    <span className="text-green-700">Payment Option</span>
+                    <span className="text-gray-900 capitalize">{selectedBooking.fare?.paymentOption === 'full' ? 'Full payment' : 'Part payment'}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Payment */}
+              <div className="bg-slate-50 rounded-xl p-4">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4" /> Payment Details</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-slate-500">Status</p>
+                    <span className={cn('inline-block px-2 py-0.5 text-xs font-semibold rounded-full capitalize', PAYMENT_COLORS[selectedBooking.payment?.status] || 'bg-gray-100 text-gray-600')}>
+                      {selectedBooking.payment?.status || 'pending'}
+                    </span>
+                  </div>
+                  <div><p className="text-xs text-slate-500">Amount Paid</p><p className="font-semibold text-gray-900">₹{selectedBooking.payment?.paidAmount || 0}</p></div>
+                  <div><p className="text-xs text-slate-500">Paid On</p><p className="font-semibold text-gray-900">{formatDate(selectedBooking.payment?.paidAt)}</p></div>
+                  <div><p className="text-xs text-slate-500">Payment ID</p><p className="font-semibold text-gray-900 text-xs font-mono break-all">{selectedBooking.payment?.paymentId || '—'}</p></div>
+                  <div className="col-span-2"><p className="text-xs text-slate-500">Razorpay Order ID</p><p className="font-semibold text-gray-900 text-xs font-mono break-all">{selectedBooking.payment?.orderId || '—'}</p></div>
+                  <div>
+                    <p className="text-xs text-slate-500">Confirmation Email</p>
+                    <p className="font-semibold text-gray-900">
+                      {!selectedBooking.passenger?.email ? 'No email given' : selectedBooking.notification?.emailSent ? 'Sent' : 'Not sent'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Driver / notes */}
+              {(selectedBooking.assignedPartner?.name || selectedBooking.adminNote || selectedBooking.cancelReason) && (
+                <div className="bg-indigo-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2"><Car className="w-4 h-4" /> Driver &amp; Notes</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {selectedBooking.assignedPartner?.name && (
+                      <>
+                        <div><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.name}</p></div>
+                        <div><p className="text-xs text-indigo-500">Driver Phone</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.phone || '—'}</p></div>
+                        <div><p className="text-xs text-indigo-500">Vehicle Number</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.vehicleNumber || '—'}</p></div>
+                      </>
+                    )}
+                    {selectedBooking.cancelReason && (
+                      <div className="col-span-2"><p className="text-xs text-indigo-500">Cancel Reason</p><p className="font-semibold text-gray-900">{selectedBooking.cancelReason}</p></div>
+                    )}
+                    {selectedBooking.adminNote && (
+                      <div className="col-span-2"><p className="text-xs text-indigo-500">Admin Note</p><p className="font-semibold text-gray-900">{selectedBooking.adminNote}</p></div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Status Update */}
               <div>
-                <h4 className="font-semibold text-gray-800 mb-3">Update Status</h4>
+                <h4 className="font-semibold text-gray-800 mb-1">Update Status</h4>
+                <p className="text-xs text-gray-500 mb-3">The customer gets an email on every status change.</p>
+                {notice && (
+                  <div className={cn('mb-3 rounded-lg px-3 py-2 text-xs font-medium border',
+                    notice.type === 'success' && 'bg-green-50 text-green-800 border-green-200',
+                    notice.type === 'warn' && 'bg-amber-50 text-amber-800 border-amber-200',
+                    notice.type === 'error' && 'bg-red-50 text-red-800 border-red-200'
+                  )}>{notice.text}</div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {['confirmed', 'assigned', 'in_progress', 'completed', 'cancelled'].map((s) => (
                     <button
