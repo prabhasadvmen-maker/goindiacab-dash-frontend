@@ -680,11 +680,11 @@ export default function Bookings() {
   const { superAdminToken, adminToken } = useAuthStore();
   const token = superAdminToken || adminToken;
 
-  const [activeTab, setActiveTab] = useState('app');
+  const [activeTab, setActiveTab] = useState('website');
 
   const TABS = [
-    { id: 'app', label: 'App / Dashboard Bookings', icon: Smartphone, desc: 'Bookings from mobile app & user dashboard' },
     { id: 'website', label: 'Website Bookings', icon: Globe, desc: 'Bookings from public website (goindiacab.com)' },
+    { id: 'app', label: 'App / Dashboard Bookings', icon: Smartphone, desc: 'Bookings from mobile app & user dashboard' },
   ];
 
   return (
