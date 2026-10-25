@@ -505,7 +505,7 @@ export default function FleetManagement() {
                 <Field label="Fuel Type" hint="Shown as a filter on the website.">
                   <select value={form.fuelType || ''} onChange={(e) => handleChange('fuelType', e.target.value)} className={inputCls}>
                     <option value="">Not specified</option>
-                    {['Petrol', 'Diesel', 'CNG', 'Electric'].map((f) => <option key={f} value={f}>{f}</option>)}
+                    {['Petrol', 'Diesel', 'Diesel + Petrol', 'CNG', 'Electric'].map((f) => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </Field>
                 <Field label="Vehicle Image" hint="PNG/JPG, auto-resized.">
