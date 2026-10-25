@@ -38,7 +38,8 @@ export default function Location() {
   const { superAdminToken, adminToken } = useAuthStore();
   const token = superAdminToken || adminToken;
 
-  const [mapsApiKey, setMapsApiKey] = useState(null);
+  const [mapsApiKey, setMapsApiKey] = useState('');
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [activeDrivers, setActiveDrivers] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [map, setMap] = useState(null);
@@ -46,10 +47,16 @@ export default function Location() {
   // Fetch config and initial snapshot
   const initializeTracking = async () => {
     try {
-      // 1. Get Geoapify API Key from Backend
-      const configRes = await axios.get(`${API_URL}/api/config`);
-      if (configRes.data.success) {
-        setMapsApiKey(configRes.data.data.apiKeys?.geoapify);
+      // 1. Geoapify API key from the backend; without one the map falls back to plain OpenStreetMap tiles.
+      try {
+        const configRes = await axios.get(`${API_URL}/api/config`);
+        if (configRes.data.success) {
+          setMapsApiKey(configRes.data.data.apiKeys?.geoapify || '');
+        }
+      } catch (error) {
+        console.error('Error loading map config:', error);
+      } finally {
+        setConfigLoaded(true);
       }
 
       // 2. Fetch Active Drivers
@@ -134,7 +141,7 @@ export default function Location() {
 
       {/* Map Container */}
       <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative" style={{ height: 'calc(100vh - 160px)' }}>
-        {!mapsApiKey ? (
+        {!configLoaded ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
             <p className="font-semibold text-sm">Loading Configuration...</p>
@@ -147,8 +154,12 @@ export default function Location() {
             ref={setMap}
           >
             <TileLayer
-              url={`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${mapsApiKey}`}
-              attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url={mapsApiKey
+                ? `https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${mapsApiKey}`
+                : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'}
+              attribution={mapsApiKey
+                ? '&copy; <a href="https://www.geoapify.com/">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
             />
 
             {activeDrivers.map((driver) => (
