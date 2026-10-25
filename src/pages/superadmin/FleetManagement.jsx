@@ -141,7 +141,7 @@ export default function FleetManagement() {
 
   const handleChange = (field, val) => setForm((f) => ({ ...f, [field]: val }));
 
-  // Resize to max 800px and keep as a data URL; the backend uploads it to R2 on save.
+  // Resize to max 800px, compress, and keep as a data URL; the backend uploads it to R2 on save.
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -155,7 +155,9 @@ export default function FleetManagement() {
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        handleChange('imageUrl', canvas.toDataURL('image/png'));
+        // WebP keeps transparency at a fraction of PNG size, so the save request stays under nginx's 1 MB default body limit.
+        const webp = canvas.toDataURL('image/webp', 0.85);
+        handleChange('imageUrl', webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = () => showToast('Could not read image', 'error');
       img.src = reader.result;
