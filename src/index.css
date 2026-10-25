@@ -21,4 +21,19 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  /* Thin visible scrollbar for the dark sidebar */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 9999px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
 }

@@ -119,7 +119,7 @@ export default function SuperAdminLayout() {
         </div>
 
         {/* Sidebar Content (Scrollable Top) */}
-        <div className="flex-1 overflow-y-auto py-4 no-scrollbar">
+        <div className="flex-1 overflow-y-auto py-4 sidebar-scroll">
           <nav className="space-y-1">
             {topMenuItems.map((item) => (
               <SidebarLink key={item.name} item={item} />
