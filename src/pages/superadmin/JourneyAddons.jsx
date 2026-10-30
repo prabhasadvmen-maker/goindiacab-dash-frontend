@@ -1,22 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Plus, Pencil, Trash2, X, Loader2, CheckCircle2, Info, Check } from 'lucide-react';
 import clsx from 'clsx';
+import { useTripTypes } from '../../hooks/useWebsiteAdmin';
 
 const inputCls = 'w-full h-10 border border-gray-300 rounded-lg px-3 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition';
 const btnBase = 'inline-flex items-center justify-center gap-2 h-10 text-sm font-semibold px-4 rounded-lg whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
 const btnPrimary = `${btnBase} bg-amber-500 hover:bg-amber-600 text-white shadow-sm`;
 const btnGhost = `${btnBase} border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium`;
-
-const TRIP_OPTIONS = [
-  { value: 'oneway', label: 'One Way' },
-  { value: 'roundtrip', label: 'Round Trip' },
-  { value: 'airport', label: 'Airport' },
-  { value: 'local', label: 'Hourly Rental' },
-];
-
-const ALL_TRIPS = TRIP_OPTIONS.map((o) => o.value);
-// An empty tripTypes list means "every trip type"; the row shows the real on/off state of each section.
-const shownIn = (a) => (a.tripTypes?.length ? a.tripTypes : ALL_TRIPS);
 
 const EMPTY = { code: '', title: '', price: '', unit: 'flat', badge: '', tripTypes: [], sortOrder: 0, isActive: true };
 
@@ -25,6 +15,11 @@ const priceLabel = (a) => (a.unit === 'perKm' ? `₹${a.price}/km` : `₹${a.pri
 
 // Extras customers can tick at checkout ("Personalize your journey"). Prices are applied by the server.
 export default function JourneyAddons({ api, canWrite, showToast }) {
+  // Trip types come from the server (GET /meta); nothing here keeps its own list.
+  const { tripTypes: TRIP_OPTIONS } = useTripTypes(api);
+  const ALL_TRIPS = TRIP_OPTIONS.map((o) => o.value);
+  // An empty tripTypes list means "every trip type"; the row shows the real on/off state of each section.
+  const shownIn = (a) => (a.tripTypes?.length ? a.tripTypes : ALL_TRIPS);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null); // null = closed
@@ -83,7 +78,7 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
     setItems((list) => list.map((x) => (x._id === a._id ? { ...x, tripTypes } : x)));
     try {
       await api('put', `/addons/${a._id}`, { tripTypes });
-      const label = TRIP_OPTIONS.find((o) => o.value === value).label;
+      const label = TRIP_OPTIONS.find((o) => o.value === value)?.label || value;
       showToast(`${a.title}: ${next.includes(value) ? 'now shown in' : 'hidden from'} ${label}`);
     } catch {
       setItems(before);

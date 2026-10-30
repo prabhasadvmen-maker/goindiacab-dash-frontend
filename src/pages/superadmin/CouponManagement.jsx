@@ -6,6 +6,7 @@ import {
   Search, Copy, Percent, IndianRupee, Users, Wand2, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useTripTypes } from '../../hooks/useWebsiteAdmin';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE = `${API_URL}/api/admins/website`;
@@ -15,14 +16,6 @@ const btnBase = 'inline-flex items-center justify-center gap-2 h-10 text-sm font
 const btnPrimary = `${btnBase} bg-amber-500 hover:bg-amber-600 text-white shadow-sm`;
 const btnDanger = `${btnBase} bg-red-500 hover:bg-red-600 text-white shadow-sm`;
 const btnGhost = `${btnBase} border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium`;
-
-// Trip types understood by the booking API.
-const TRIP_TYPES = [
-  { value: 'oneway', label: 'One Way' },
-  { value: 'roundtrip', label: 'Round Trip' },
-  { value: 'airport', label: 'Airport Transfer' },
-  { value: 'local', label: 'Local / Hourly' },
-];
 
 const EMPTY = {
   code: '', title: '', description: '', discountType: 'percent', discountValue: '', maxDiscount: '',
@@ -138,6 +131,7 @@ export default function CouponManagement() {
       axios({ method, url: `${BASE}${url}`, data, params, headers: { Authorization: `Bearer ${token}` } }),
     [token]
   );
+  const { tripTypes: TRIP_TYPES } = useTripTypes(api); // trip types come from the server
 
   const fetchCoupons = useCallback(async () => {
     setLoading(true);
