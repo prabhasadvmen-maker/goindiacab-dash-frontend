@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Plus, Pencil, Trash2, X, Loader2, CheckCircle2, Info } from 'lucide-react';
+import { Sparkles, Plus, Pencil, Trash2, X, Loader2, CheckCircle2, Info, Check } from 'lucide-react';
 import clsx from 'clsx';
 
 const inputCls = 'w-full h-10 border border-gray-300 rounded-lg px-3 text-sm text-gray-900 placeholder:text-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition';
@@ -13,6 +13,10 @@ const TRIP_OPTIONS = [
   { value: 'airport', label: 'Airport' },
   { value: 'local', label: 'Hourly Rental' },
 ];
+
+const ALL_TRIPS = TRIP_OPTIONS.map((o) => o.value);
+// An empty tripTypes list means "every trip type"; the row shows the real on/off state of each section.
+const shownIn = (a) => (a.tripTypes?.length ? a.tripTypes : ALL_TRIPS);
 
 const EMPTY = { code: '', title: '', price: '', unit: 'flat', badge: '', tripTypes: [], sortOrder: 0, isActive: true };
 
@@ -66,6 +70,27 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
     }
   };
 
+  // One-click show/hide of an add-on for a single section (One Way, Round Trip, Airport, Hourly).
+  const toggleSection = async (a, value) => {
+    const current = shownIn(a);
+    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+    if (next.length === 0) {
+      showToast('Keep at least one section on. To hide this add-on everywhere, use Hide.', 'error');
+      return;
+    }
+    const tripTypes = next.length === ALL_TRIPS.length ? [] : ALL_TRIPS.filter((v) => next.includes(v)); // all four = no restriction
+    const before = items;
+    setItems((list) => list.map((x) => (x._id === a._id ? { ...x, tripTypes } : x)));
+    try {
+      await api('put', `/addons/${a._id}`, { tripTypes });
+      const label = TRIP_OPTIONS.find((o) => o.value === value).label;
+      showToast(`${a.title}: ${next.includes(value) ? 'now shown in' : 'hidden from'} ${label}`);
+    } catch {
+      setItems(before);
+      showToast('Could not update this section', 'error');
+    }
+  };
+
   const toggleActive = async (a) => {
     try {
       await api('put', `/addons/${a._id}`, { isActive: !a.isActive });
@@ -116,10 +141,7 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
                     {a.title}
                     {a.badge && <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 align-middle">{a.badge}</span>}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {a.tripTypes?.length ? a.tripTypes.map((t) => TRIP_OPTIONS.find((o) => o.value === t)?.label || t).join(', ') : 'All trip types'}
-                    {' · '}{a.unit === 'perKm' ? 'per km of billed distance' : 'per booking'}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{a.unit === 'perKm' ? 'Charged per km of billed distance' : 'Charged once per booking'}</p>
                 </div>
                 <span className="text-sm font-extrabold text-gray-900">{priceLabel(a)}</span>
                 <span className={clsx('text-xs font-semibold px-2.5 py-1 rounded-full', a.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600')}>
@@ -132,6 +154,30 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
                     <button onClick={() => remove(a)} title="Delete" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 )}
+                <div className="basis-full flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-2.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mr-1">Show in</span>
+                  {TRIP_OPTIONS.map((o) => {
+                    const on = shownIn(a).includes(o.value);
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
+                        disabled={!canWrite}
+                        onClick={() => toggleSection(a, o.value)}
+                        title={on ? `Shown in ${o.label}. Click to hide.` : `Hidden in ${o.label}. Click to show.`}
+                        className={clsx(
+                          'inline-flex items-center gap-1 h-7 px-2.5 rounded-full border text-xs font-semibold transition-colors disabled:cursor-default',
+                          on ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100' : 'bg-white border-gray-300 text-gray-400 hover:bg-gray-50 line-through'
+                        )}
+                      >
+                        {on ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </li>
             ))}
           </ul>
