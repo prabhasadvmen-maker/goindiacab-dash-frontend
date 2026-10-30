@@ -553,7 +553,7 @@ function WebsiteBookings({ token }) {
                     <div><p className="text-xs text-amber-500">Stop</p><p className="font-semibold text-gray-900">{selectedBooking.trip.stop}</p></div>
                   )}
                   <div><p className="text-xs text-amber-500">Date & Time</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.date} at {selectedBooking.trip?.time}</p></div>
-                  <div><p className="text-xs text-amber-500">Type</p><p className="font-semibold text-gray-900 capitalize">{selectedBooking.trip?.tripType}</p></div>
+                  <div><p className="text-xs text-amber-500">Type</p><p className="font-semibold text-gray-900 capitalize">{selectedBooking.trip?.tripType === 'airport' && selectedBooking.trip?.airportDir ? `Airport ${selectedBooking.trip.airportDir === 'from' ? 'Pickup' : 'Drop'}` : selectedBooking.trip?.tripType}</p></div>
                   {selectedBooking.trip?.package && (
                     <div><p className="text-xs text-amber-500">Package</p><p className="font-semibold text-gray-900">{selectedBooking.trip.package}</p></div>
                   )}

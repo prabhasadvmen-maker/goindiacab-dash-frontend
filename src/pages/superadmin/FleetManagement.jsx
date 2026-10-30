@@ -4,9 +4,11 @@ import { useAuthStore } from '../../store/authStore';
 import {
   Car, Plus, Pencil, Trash2, X, Loader2, ToggleLeft, ToggleRight,
   IndianRupee, Users, Package, ChevronDown, ChevronUp,
-  RefreshCw, AlertCircle, CheckCircle2, Truck, Info, MoreVertical, Eye
+  RefreshCw, AlertCircle, CheckCircle2, Truck, Info, MoreVertical, Eye,
+  Plane, Repeat, Clock, Route, MapPin, Calculator
 } from 'lucide-react';
 import clsx from 'clsx';
+import JourneyAddons from './JourneyAddons';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BASE = `${API_URL}/api/admins/website`;
@@ -85,10 +87,132 @@ function VehicleImage({ src, alt, className }) {
   return <img src={src} alt={alt} onError={() => setFailed(true)} className={className} />;
 }
 
+const num = (v) => Number(v) || 0;
+const rupees = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+
+const EMPTY_AIRPORT = { perKm: '', minKm: 0, driverAllowance: '', pickupFee: 0, dropFee: 0 };
+
+// One tab per option the customer can pick on the website.
+const PRICE_TABS = [
+  { id: 'oneway', label: 'One Way', where: 'Website › Outstation › One Way', icon: Route },
+  { id: 'roundtrip', label: 'Round Trip', where: 'Website › Outstation › Round Trip', icon: Repeat },
+  { id: 'airport', label: 'Airport', where: 'Website › Airport › Pickup from / Drop to', icon: Plane },
+  { id: 'hourly', label: 'Hourly Rental', where: 'Website › Hourly Rentals', icon: Clock },
+];
+
+// Mirrors backend calculateWebFare so the admin sees exactly what a customer would be charged.
+function previewFare(f, tab, { km, days, dir, pkgIdx }) {
+  let base;
+  let extra = 0;
+  let driver = 0;
+  let kmLine;
+
+  if (tab === 'hourly') {
+    const pkg = f.packages[pkgIdx];
+    if (!pkg) return null;
+    base = num(pkg.price);
+    kmLine = `${num(pkg.km)} km / ${num(pkg.hours)} hr included, then ₹${num(pkg.extraKmRate)}/km`;
+  } else if (tab === 'roundtrip') {
+    const travel = km * 2;
+    const included = num(f.minKmPerDay) * days;
+    base = included * num(f.perKmRound);
+    const extraRate = num(f.perKmRoundExtra) > 0 ? num(f.perKmRoundExtra) : num(f.perKmRound);
+    extra = Math.max(0, travel - included) * extraRate;
+    driver = num(f.driverAllowancePerDay) * days;
+    const over = Math.max(0, travel - included);
+    kmLine = `${Math.round(travel)} km travelled (both ways) · ${included} km included for ${days} day${days > 1 ? 's' : ''}${over ? ` · ${Math.round(over)} km extra × ₹${extraRate}` : ''}`;
+  } else if (tab === 'airport') {
+    const a = f.airport || {};
+    const own = num(a.perKm) > 0;
+    const perKm = own ? num(a.perKm) : num(f.perKmOneway);
+    const billable = Math.max(km, own ? num(a.minKm) : num(f.minKmOneway));
+    const fee = dir === 'from' ? num(a.pickupFee) : num(a.dropFee);
+    base = billable * perKm + fee;
+    driver = own ? num(a.driverAllowance) : num(f.driverAllowance);
+    kmLine = `${Math.round(billable)} km × ₹${perKm}${fee ? ` + ₹${fee} airport fee` : ''}${own ? '' : ' (One Way rate)'}`;
+  } else {
+    const billable = Math.max(km, num(f.minKmOneway));
+    base = billable * num(f.perKmOneway);
+    driver = num(f.driverAllowance);
+    kmLine = `${Math.round(billable)} km × ₹${num(f.perKmOneway)}`;
+  }
+
+  base = Math.round(base);
+  extra = Math.round(extra);
+  driver = Math.round(driver);
+  const gst = Math.round(((base + extra + driver) * num(f.gstPercent)) / 100);
+  return { base, extra, driver, gst, total: base + extra + driver + gst, kmLine };
+}
+
+function FarePreview({ form, tab }) {
+  const [km, setKm] = useState(100);
+  const [days, setDays] = useState(2);
+  const [dir, setDir] = useState('to');
+  const [pkgIdx, setPkgIdx] = useState(0);
+  const r = previewFare(form, tab, { km: num(km), days: Math.max(1, num(days)), dir, pkgIdx });
+
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+      <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald-700">
+        <Calculator className="w-3.5 h-3.5" /> Customer will see
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        {tab === 'hourly' ? (
+          <label className="text-xs text-gray-600">
+            Package
+            <select value={pkgIdx} onChange={(e) => setPkgIdx(Number(e.target.value))} className={clsx(inputCls, 'mt-1 w-48')}>
+              {form.packages.map((p, i) => <option key={i} value={i}>{p.label || `Package ${i + 1}`}</option>)}
+            </select>
+          </label>
+        ) : (
+          <label className="text-xs text-gray-600">
+            {tab === 'roundtrip' ? 'One-way distance (km)' : 'Trip distance (km)'}
+            <input type="number" min={0} value={km} onChange={(e) => setKm(e.target.value)} className={clsx(inputCls, 'mt-1 w-32')} />
+          </label>
+        )}
+        {tab === 'roundtrip' && (
+          <label className="text-xs text-gray-600">
+            Days
+            <input type="number" min={1} max={30} value={days} onChange={(e) => setDays(e.target.value)} className={clsx(inputCls, 'mt-1 w-20')} />
+          </label>
+        )}
+        {tab === 'airport' && (
+          <div className="text-xs text-gray-600">
+            Direction
+            <div className="mt-1 flex rounded-lg border border-gray-300 overflow-hidden bg-white">
+              {[['from', 'Pickup from airport'], ['to', 'Drop to airport']].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => setDir(v)}
+                  className={clsx('h-10 px-3 text-xs font-semibold', dir === v ? 'bg-emerald-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!r ? (
+        <p className="mt-4 text-sm text-gray-500">Add a package to see its price.</p>
+      ) : (
+        <>
+          <p className="mt-3 text-xs text-gray-500">{r.kmLine}</p>
+          <dl className="mt-2 space-y-1 text-sm text-gray-700">
+            <div className="flex justify-between"><dt>Base fare</dt><dd>{rupees(r.base)}</dd></div>
+            {r.extra > 0 && <div className="flex justify-between"><dt>Extra km</dt><dd>{rupees(r.extra)}</dd></div>}
+            <div className="flex justify-between"><dt>Driver allowance</dt><dd>{rupees(r.driver)}</dd></div>
+            <div className="flex justify-between"><dt>GST ({num(form.gstPercent)}%)</dt><dd>{rupees(r.gst)}</dd></div>
+            <div className="flex justify-between border-t border-emerald-200 pt-2 text-base font-extrabold text-gray-900"><dt>Total</dt><dd>{rupees(r.total)}</dd></div>
+          </dl>
+        </>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_RULE = {
   vehicleType: '', name: '', model: '', seats: 4, bags: 2, rating: 0, fuelType: '', imageUrl: '',
-  perKmOneway: '', perKmRound: '', minKmOneway: 250, minKmPerDay: 250,
-  driverAllowance: 300, driverAllowancePerDay: 300, gstPercent: 5,
+  perKmOneway: '', perKmRound: '', minKmOneway: 0, minKmPerDay: 250,
+  driverAllowance: 300, driverAllowancePerDay: 300, gstPercent: 5, airport: { ...EMPTY_AIRPORT },
   sortOrder: 0, isActive: true, packages: [],
 };
 
@@ -108,6 +232,7 @@ export default function FleetManagement() {
   const [selected, setSelected] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const [menuId, setMenuId] = useState(null);
+  const [priceTab, setPriceTab] = useState('oneway');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -134,12 +259,13 @@ export default function FleetManagement() {
 
   useEffect(() => { fetchRules(); }, [fetchRules]);
 
-  const openAdd = () => { setForm({ ...EMPTY_RULE }); setModal('add'); };
-  const openEdit = (rule) => { setForm({ ...rule, packages: rule.packages || [] }); setSelected(rule); setModal('edit'); };
+  const openAdd = () => { setForm({ ...EMPTY_RULE, airport: { ...EMPTY_AIRPORT } }); setPriceTab('oneway'); setModal('add'); };
+  const openEdit = (rule) => { setForm({ ...rule, packages: rule.packages || [], airport: { ...EMPTY_AIRPORT, ...(rule.airport || {}) } }); setSelected(rule); setPriceTab('oneway'); setModal('edit'); };
   const openView = (rule) => { setSelected(rule); setModal('view'); };
   const openDelete = (rule) => { setSelected(rule); setModal('delete'); };
 
   const handleChange = (field, val) => setForm((f) => ({ ...f, [field]: val }));
+  const handleAirport = (field, val) => setForm((f) => ({ ...f, airport: { ...f.airport, [field]: val } }));
 
   // Resize to max 800px, compress, and keep as a data URL; the backend uploads it to R2 on save.
   const handleImageSelect = (e) => {
@@ -175,8 +301,24 @@ export default function FleetManagement() {
   const removePackage = (idx) => setForm((f) => ({ ...f, packages: f.packages.filter((_, i) => i !== idx) }));
 
   const handleSave = async () => {
-    if (!form.vehicleType || !form.name || !form.perKmOneway || !form.perKmRound) {
-      showToast('Please fill all required fields', 'error');
+    if (!form.vehicleType || !form.name) {
+      showToast('Vehicle Type ID and Display Name are required', 'error');
+      return;
+    }
+    if (!(Number(form.perKmOneway) > 0)) {
+      setPriceTab('oneway');
+      showToast('Enter the One Way ₹ per km rate', 'error');
+      return;
+    }
+    if (!(Number(form.perKmRound) > 0)) {
+      setPriceTab('roundtrip');
+      showToast('Enter the Round Trip ₹ per km rate', 'error');
+      return;
+    }
+    const badPkg = form.packages.findIndex((p) => !p.label || !(Number(p.price) > 0) || !(Number(p.km) > 0));
+    if (badPkg >= 0) {
+      setPriceTab('hourly');
+      showToast(`Hourly package ${badPkg + 1}: label, KM and price are required`, 'error');
       return;
     }
     setSaving(true);
@@ -185,11 +327,19 @@ export default function FleetManagement() {
         ...form,
         perKmOneway: Number(form.perKmOneway),
         perKmRound: Number(form.perKmRound),
+        perKmRoundExtra: Number(form.perKmRoundExtra) || 0,
         minKmOneway: Number(form.minKmOneway),
         minKmPerDay: Number(form.minKmPerDay),
         driverAllowance: Number(form.driverAllowance),
         driverAllowancePerDay: Number(form.driverAllowancePerDay),
         gstPercent: Number(form.gstPercent),
+        airport: {
+          perKm: Number(form.airport?.perKm) || 0,
+          minKm: Number(form.airport?.minKm) || 0,
+          driverAllowance: Number(form.airport?.driverAllowance) || 0,
+          pickupFee: Number(form.airport?.pickupFee) || 0,
+          dropFee: Number(form.airport?.dropFee) || 0,
+        },
         sortOrder: Number(form.sortOrder),
         seats: Number(form.seats),
         bags: Number(form.bags) || 0,
@@ -426,6 +576,31 @@ export default function FleetManagement() {
                     <p className="text-lg font-bold text-purple-700">₹{rule.perKmRound}<span className="text-xs font-normal">/km</span></p>
                     <p className="text-xs text-purple-400">Min: {rule.minKmPerDay} km/day</p>
                   </div>
+                  <div className="bg-sky-50 rounded-xl p-3">
+                    <p className="text-xs text-sky-600 font-medium mb-0.5 flex items-center gap-1"><Plane className="w-3 h-3" /> Airport</p>
+                    {Number(rule.airport?.perKm) > 0 ? (
+                      <>
+                        <p className="text-lg font-bold text-sky-700">₹{rule.airport.perKm}<span className="text-xs font-normal">/km</span></p>
+                        <p className="text-xs text-sky-500">Pickup +₹{rule.airport.pickupFee || 0} · Drop +₹{rule.airport.dropFee || 0}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-lg font-bold text-sky-700">₹{rule.perKmOneway}<span className="text-xs font-normal">/km</span></p>
+                        <p className="text-xs text-sky-500">Uses One Way rate</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="bg-amber-50 rounded-xl p-3">
+                    <p className="text-xs text-amber-600 font-medium mb-0.5 flex items-center gap-1"><Clock className="w-3 h-3" /> Hourly</p>
+                    {rule.packages?.length > 0 ? (
+                      <>
+                        <p className="text-lg font-bold text-amber-700"><span className="text-xs font-normal">from </span>₹{Math.min(...rule.packages.map((p) => p.price))}</p>
+                        <p className="text-xs text-amber-500">{rule.packages.length} package{rule.packages.length > 1 ? 's' : ''}</p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-red-500 mt-1">No packages — hidden for hourly</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -466,6 +641,8 @@ export default function FleetManagement() {
         </div>
       )}
 
+      <JourneyAddons api={api} canWrite={canWrite} showToast={showToast} />
+
       {/* ─── Add / Edit Modal ─── */}
       {(modal === 'add' || modal === 'edit') && (
         <Modal
@@ -505,7 +682,7 @@ export default function FleetManagement() {
                 <Field label="Fuel Type" hint="Shown as a filter on the website.">
                   <select value={form.fuelType || ''} onChange={(e) => handleChange('fuelType', e.target.value)} className={inputCls}>
                     <option value="">Not specified</option>
-                    {['Petrol', 'Diesel', 'Diesel + Petrol', 'CNG', 'Electric'].map((f) => <option key={f} value={f}>{f}</option>)}
+                    {['Petrol', 'Diesel', 'Petrol + CNG', 'CNG', 'Electric'].map((f) => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </Field>
                 <Field label="Vehicle Image" hint="PNG/JPG, auto-resized.">
@@ -527,87 +704,148 @@ export default function FleetManagement() {
               </div>
             </Section>
 
-            <Section icon={IndianRupee} title="Pricing Configuration" subtitle="Per-km rates, minimums and allowances">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="₹/km One Way" required>
-                  <input type="number" value={form.perKmOneway} onChange={(e) => handleChange('perKmOneway', e.target.value)} placeholder="13" min={0} className={inputCls} />
-                </Field>
-                <Field label="₹/km Round Trip" required>
-                  <input type="number" value={form.perKmRound} onChange={(e) => handleChange('perKmRound', e.target.value)} placeholder="12" min={0} className={inputCls} />
-                </Field>
-                <Field label="Min KM (One Way)">
-                  <input type="number" value={form.minKmOneway} onChange={(e) => handleChange('minKmOneway', e.target.value)} min={0} className={inputCls} />
-                </Field>
-                <Field label="Min KM / Day (Round Trip)">
-                  <input type="number" value={form.minKmPerDay} onChange={(e) => handleChange('minKmPerDay', e.target.value)} min={0} className={inputCls} />
-                </Field>
-                <Field label="Driver Allowance (One Way)">
-                  <input type="number" value={form.driverAllowance} onChange={(e) => handleChange('driverAllowance', e.target.value)} min={0} className={inputCls} />
-                </Field>
-                <Field label="Driver Allowance / Day (Round Trip)">
-                  <input type="number" value={form.driverAllowancePerDay} onChange={(e) => handleChange('driverAllowancePerDay', e.target.value)} min={0} className={inputCls} />
-                </Field>
-                <Field label="GST %">
-                  <input type="number" value={form.gstPercent} onChange={(e) => handleChange('gstPercent', e.target.value)} min={0} max={30} className={inputCls} />
-                </Field>
+            <Section icon={IndianRupee} title="Pricing by Trip Type" subtitle="Each tab controls one option on the website — set the rate for every trip type this vehicle serves">
+              <div className="flex flex-wrap gap-2 mb-4" role="tablist">
+                {PRICE_TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={priceTab === t.id}
+                    onClick={() => setPriceTab(t.id)}
+                    className={clsx(
+                      'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-semibold border transition-colors',
+                      priceTab === t.id ? 'bg-amber-500 border-amber-500 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    )}
+                  >
+                    <t.icon className="w-4 h-4" /> {t.label}
+                  </button>
+                ))}
               </div>
-            </Section>
 
-            <Section
-              icon={Package}
-              title="Local / Rental Packages"
-              subtitle="Optional — for local and hourly trips"
-              action={
-                <button type="button" onClick={addPackage} className={clsx(btnGhost, 'h-8 text-xs px-3')}>
-                  <Plus className="w-3.5 h-3.5" /> Add Package
-                </button>
-              }
-            >
-              {form.packages.length === 0 ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-400 py-5 border border-dashed border-gray-200 rounded-lg">
-                  <Info className="w-4 h-4" /> No packages yet. Click “Add Package” to add one.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {form.packages.map((pkg, idx) => (
-                    <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Package {idx + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => removePackage(idx)}
-                          title="Remove package"
-                          className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
+              <p className="mb-4 flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <MapPin className="w-3.5 h-3.5 shrink-0" /> {PRICE_TABS.find((t) => t.id === priceTab).where}
+              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="space-y-4">
+                  {priceTab === 'oneway' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="₹ per km" required hint="Charged on the trip distance.">
+                        <input type="number" value={form.perKmOneway} onChange={(e) => handleChange('perKmOneway', e.target.value)} placeholder="13" min={0} className={inputCls} />
+                      </Field>
+                      <Field label="Minimum km" hint="Customer pays for at least this many km. 0 = actual distance.">
+                        <input type="number" value={form.minKmOneway} onChange={(e) => handleChange('minKmOneway', e.target.value)} min={0} className={inputCls} />
+                      </Field>
+                      <Field label="Driver allowance (₹ per trip)" hint="Flat amount added to every one-way trip.">
+                        <input type="number" value={form.driverAllowance} onChange={(e) => handleChange('driverAllowance', e.target.value)} min={0} className={inputCls} />
+                      </Field>
+                    </div>
+                  )}
+
+                  {priceTab === 'roundtrip' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="₹ per km" required hint="Charged on distance travelled both ways.">
+                        <input type="number" value={form.perKmRound} onChange={(e) => handleChange('perKmRound', e.target.value)} placeholder="12" min={0} className={inputCls} />
+                      </Field>
+                      <Field label="Minimum km per day" hint="Billed at least this many km for each day of the trip.">
+                        <input type="number" value={form.minKmPerDay} onChange={(e) => handleChange('minKmPerDay', e.target.value)} min={0} className={inputCls} />
+                      </Field>
+                      <Field label="Extra km rate (₹ per km)" hint="Charged for every km beyond the included km. Leave empty to use the ₹ per km above.">
+                        <input type="number" value={form.perKmRoundExtra || ''} onChange={(e) => handleChange('perKmRoundExtra', e.target.value)} placeholder="Same as ₹ per km" min={0} className={inputCls} />
+                      </Field>
+                      <Field label="Driver allowance (₹ per day)" hint="Multiplied by the number of days.">
+                        <input type="number" value={form.driverAllowancePerDay} onChange={(e) => handleChange('driverAllowancePerDay', e.target.value)} min={0} className={inputCls} />
+                      </Field>
+                    </div>
+                  )}
+
+                  {priceTab === 'airport' && (
+                    <>
+                      {!(Number(form.airport?.perKm) > 0) && (
+                        <p className="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                          <Info className="w-4 h-4 shrink-0 mt-0.5" /> Airport rate is empty, so airport trips are currently charged at the One Way rate. Enter a rate below to price airport transfers separately.
+                        </p>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Field label="₹ per km" hint="Leave empty to use the One Way rate.">
+                          <input type="number" value={form.airport?.perKm ?? ''} onChange={(e) => handleAirport('perKm', e.target.value)} placeholder="Same as One Way" min={0} className={inputCls} />
+                        </Field>
+                        <Field label="Minimum km" hint="0 = actual distance.">
+                          <input type="number" value={form.airport?.minKm ?? 0} onChange={(e) => handleAirport('minKm', e.target.value)} min={0} className={inputCls} />
+                        </Field>
+                        <Field label="Driver allowance (₹ per trip)">
+                          <input type="number" value={form.airport?.driverAllowance ?? ''} onChange={(e) => handleAirport('driverAllowance', e.target.value)} min={0} className={inputCls} />
+                        </Field>
+                        <div className="hidden sm:block" />
+                        <Field label="Pickup from airport — extra fee (₹)" hint="Parking / waiting charge, added to base fare.">
+                          <input type="number" value={form.airport?.pickupFee ?? 0} onChange={(e) => handleAirport('pickupFee', e.target.value)} min={0} className={inputCls} />
+                        </Field>
+                        <Field label="Drop to airport — extra fee (₹)" hint="Added to base fare. Usually 0.">
+                          <input type="number" value={form.airport?.dropFee ?? 0} onChange={(e) => handleAirport('dropFee', e.target.value)} min={0} className={inputCls} />
+                        </Field>
+                      </div>
+                    </>
+                  )}
+
+                  {priceTab === 'hourly' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-gray-500">Fixed price per package. Customers choose a package on the Hourly Rentals tab.</p>
+                        <button type="button" onClick={addPackage} className={clsx(btnGhost, 'h-8 text-xs px-3 shrink-0')}>
+                          <Plus className="w-3.5 h-3.5" /> Add Package
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="col-span-2 md:col-span-3">
-                          <Field label="Label">
-                            <input value={pkg.label} onChange={(e) => handlePackageChange(idx, 'label', e.target.value)} placeholder="8 Hrs / 80 Km" className={inputCls} />
-                          </Field>
+                      {form.packages.length === 0 ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-gray-400 py-5 border border-dashed border-gray-200 rounded-lg">
+                          <Info className="w-4 h-4" /> No packages yet. Click “Add Package”.
                         </div>
-                        <Field label="Hours">
-                          <input type="number" value={pkg.hours} onChange={(e) => handlePackageChange(idx, 'hours', e.target.value)} min={0} className={inputCls} />
-                        </Field>
-                        <Field label="KM Included">
-                          <input type="number" value={pkg.km} onChange={(e) => handlePackageChange(idx, 'km', e.target.value)} min={0} className={inputCls} />
-                        </Field>
-                        <Field label="Price (₹)">
-                          <input type="number" value={pkg.price} onChange={(e) => handlePackageChange(idx, 'price', e.target.value)} placeholder="2200" min={0} className={inputCls} />
-                        </Field>
-                        <Field label="Extra ₹/km">
-                          <input type="number" value={pkg.extraKmRate} onChange={(e) => handlePackageChange(idx, 'extraKmRate', e.target.value)} min={0} className={inputCls} />
-                        </Field>
-                        <Field label="Extra ₹/hr">
-                          <input type="number" value={pkg.extraHourRate} onChange={(e) => handlePackageChange(idx, 'extraHourRate', e.target.value)} min={0} className={inputCls} />
-                        </Field>
-                      </div>
+                      ) : (
+                        form.packages.map((pkg, idx) => (
+                          <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Package {idx + 1}</span>
+                              <button type="button" onClick={() => removePackage(idx)} title="Remove package" className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="col-span-2">
+                                <Field label="Label">
+                                  <input value={pkg.label} onChange={(e) => handlePackageChange(idx, 'label', e.target.value)} placeholder="8 Hrs / 80 Km" className={inputCls} />
+                                </Field>
+                              </div>
+                              <Field label="Hours">
+                                <input type="number" value={pkg.hours} onChange={(e) => handlePackageChange(idx, 'hours', e.target.value)} min={0} className={inputCls} />
+                              </Field>
+                              <Field label="KM included">
+                                <input type="number" value={pkg.km} onChange={(e) => handlePackageChange(idx, 'km', e.target.value)} min={0} className={inputCls} />
+                              </Field>
+                              <Field label="Package price (₹)">
+                                <input type="number" value={pkg.price} onChange={(e) => handlePackageChange(idx, 'price', e.target.value)} placeholder="2200" min={0} className={inputCls} />
+                              </Field>
+                              <Field label="Extra ₹ / km">
+                                <input type="number" value={pkg.extraKmRate} onChange={(e) => handlePackageChange(idx, 'extraKmRate', e.target.value)} min={0} className={inputCls} />
+                              </Field>
+                              <Field label="Extra ₹ / hr">
+                                <input type="number" value={pkg.extraHourRate} onChange={(e) => handlePackageChange(idx, 'extraHourRate', e.target.value)} min={0} className={inputCls} />
+                              </Field>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ))}
+                  )}
+
+                  <Field label="GST % (applies to every trip type)">
+                    <input type="number" value={form.gstPercent} onChange={(e) => handleChange('gstPercent', e.target.value)} min={0} max={30} className={clsx(inputCls, 'max-w-[8rem]')} />
+                  </Field>
                 </div>
-              )}
+
+                <div className="lg:sticky lg:top-0 self-start">
+                  <FarePreview key={priceTab} form={form} tab={priceTab} />
+                </div>
+              </div>
             </Section>
 
             <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-3.5">
@@ -656,6 +894,10 @@ export default function FleetManagement() {
                 ['Min KM / Day', `${selected.minKmPerDay} km`],
                 ['Driver Allowance', `₹${selected.driverAllowance}`],
                 ['Driver Allowance / Day', `₹${selected.driverAllowancePerDay}`],
+                ['Airport ₹/km', Number(selected.airport?.perKm) > 0 ? `₹${selected.airport.perKm}` : 'Uses One Way rate'],
+                ['Airport Min KM', `${selected.airport?.minKm || 0} km`],
+                ['Airport Driver Allowance', Number(selected.airport?.perKm) > 0 ? `₹${selected.airport.driverAllowance || 0}` : 'Uses One Way'],
+                ['Airport Pickup / Drop Fee', `+₹${selected.airport?.pickupFee || 0} / +₹${selected.airport?.dropFee || 0}`],
                 ['GST', `${selected.gstPercent}%`],
                 ['Status', selected.isActive ? 'Active' : 'Inactive'],
               ].map(([k, v]) => (

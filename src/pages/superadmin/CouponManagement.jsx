@@ -20,6 +20,7 @@ const btnGhost = `${btnBase} border border-gray-300 text-gray-700 bg-white hover
 const TRIP_TYPES = [
   { value: 'oneway', label: 'One Way' },
   { value: 'roundtrip', label: 'Round Trip' },
+  { value: 'airport', label: 'Airport Transfer' },
   { value: 'local', label: 'Local / Hourly' },
 ];
 
