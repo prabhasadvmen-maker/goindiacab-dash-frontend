@@ -114,13 +114,13 @@ function previewFare(f, tab, { km, days, dir, pkgIdx }) {
     kmLine = `${num(pkg.km)} km / ${num(pkg.hours)} hr included, then ₹${num(pkg.extraKmRate)}/km`;
   } else if (tab === 'roundtrip') {
     const travel = km * 2;
-    const included = num(f.minKmPerDay) * days;
-    base = included * num(f.perKmRound);
+    // Included km = daily minimum x days, or the km the trip actually covers, whichever is more.
+    const minimum = num(f.minKmPerDay) * days;
+    const included = Math.max(travel, minimum);
     const extraRate = num(f.perKmRoundExtra) > 0 ? num(f.perKmRoundExtra) : num(f.perKmRound);
-    extra = Math.max(0, travel - included) * extraRate;
+    base = included * num(f.perKmRound);
     driver = num(f.driverAllowancePerDay) * days;
-    const over = Math.max(0, travel - included);
-    kmLine = `${Math.round(travel)} km travelled (both ways) · ${included} km included for ${days} day${days > 1 ? 's' : ''}${over ? ` · ${Math.round(over)} km extra × ₹${extraRate}` : ''}`;
+    kmLine = `${Math.round(travel)} km trip (both ways) · ${Math.round(included)} km included${travel < minimum ? ` (minimum ${minimum} km for ${days} day${days > 1 ? 's' : ''})` : ''} · beyond that ₹${extraRate}/km`;
   } else if (tab === 'airport') {
     const a = f.airport || {};
     const own = num(a.perKm) > 0;
@@ -751,7 +751,7 @@ export default function FleetManagement() {
                       <Field label="Minimum km per day" hint="Billed at least this many km for each day of the trip.">
                         <input type="number" value={form.minKmPerDay} onChange={(e) => handleChange('minKmPerDay', e.target.value)} min={0} className={inputCls} />
                       </Field>
-                      <Field label="Extra km rate (₹ per km)" hint="Charged for every km beyond the included km. Leave empty to use the ₹ per km above.">
+                      <Field label="Extra km rate (₹ per km)" hint="Charged only for km driven beyond the included km (the trip's own km or the daily minimum, whichever is more). Leave empty to use the ₹ per km above.">
                         <input type="number" value={form.perKmRoundExtra || ''} onChange={(e) => handleChange('perKmRoundExtra', e.target.value)} placeholder="Same as ₹ per km" min={0} className={inputCls} />
                       </Field>
                       <Field label="Driver allowance (₹ per day)" hint="Multiplied by the number of days.">
