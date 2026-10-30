@@ -1,13 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Globe, MapPin, ListChecks, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Globe, MapPin, ListChecks, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { useWebsiteAdmin } from '../../hooks/useWebsiteAdmin';
 import ServiceCities from './website/ServiceCities';
 import PolicyManager from './website/PolicyManager';
+import PaymentSettings from './website/PaymentSettings';
 
 const TABS = [
   { id: 'cities', label: 'Service Cities', icon: MapPin },
   { id: 'policies', label: 'Inclusions & Exclusions', icon: ListChecks },
+  { id: 'payments', label: 'Payments & Cancellation', icon: CreditCard },
 ];
 
 // Everything here is read from and saved to the API; nothing on this page is a fixed list.
@@ -42,7 +44,7 @@ export default function WebsiteManagement() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Website Management</h2>
           <p className="text-gray-500 mt-1 text-sm">
-            Cities customers can book from, and the inclusions / exclusions shown at checkout. Changes reach the website within seconds.
+            Cities customers can book from, the inclusions / exclusions and the payment rules shown at checkout. Changes reach the website within seconds.
             {!canWrite && <span className="ml-1 font-semibold text-amber-600">View only: SuperAdmin can edit.</span>}
           </p>
         </div>
@@ -67,6 +69,7 @@ export default function WebsiteManagement() {
 
       {tab === 'cities' && <ServiceCities api={api} canWrite={canWrite} showToast={showToast} />}
       {tab === 'policies' && <PolicyManager api={api} canWrite={canWrite} showToast={showToast} />}
+      {tab === 'payments' && <PaymentSettings api={api} canWrite={canWrite} showToast={showToast} />}
     </div>
   );
 }

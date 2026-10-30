@@ -471,7 +471,7 @@ function WebsiteBookings({ token }) {
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-bold text-gray-900">₹{b.fare?.total}</p>
-                      <p className="text-xs text-gray-400">Paid: ₹{b.fare?.paidNow} | Later: ₹{b.fare?.payLater}</p>
+                      <p className="text-xs text-gray-400">{b.fare?.paymentOption === 'cash' ? `Pay to driver: ₹${b.fare?.payLater}` : `Paid: ₹${b.fare?.paidNow} | Later: ₹${b.fare?.payLater}`}</p>
                     </td>
                     <td className="px-5 py-4">
                       <span className={cn('px-2 py-0.5 text-xs font-semibold rounded-full capitalize', PAYMENT_COLORS[b.payment?.status] || 'bg-gray-100 text-gray-600')}>
@@ -588,7 +588,7 @@ function WebsiteBookings({ token }) {
                   ))}
                   <div className="flex justify-between pt-1.5">
                     <span className="text-green-700">Payment Option</span>
-                    <span className="text-gray-900 capitalize">{selectedBooking.fare?.paymentOption === 'full' ? 'Full payment' : 'Part payment'}</span>
+                    <span className="text-gray-900 capitalize">{{ full: 'Full payment', cash: 'Pay to driver (cash)' }[selectedBooking.fare?.paymentOption] || 'Part payment'}</span>
                   </div>
                 </div>
               </div>
