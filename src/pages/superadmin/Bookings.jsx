@@ -274,6 +274,8 @@ function WebsiteBookings({ token }) {
   const [detailModal, setDetailModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [driverForm, setDriverForm] = useState(null); // null = closed
+  const [driverError, setDriverError] = useState('');
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -302,7 +304,7 @@ function WebsiteBookings({ token }) {
     setPage(1);
   };
 
-  const handleStatusUpdate = async (bookingId, newStatus) => {
+  const handleStatusUpdate = async (bookingId, newStatus, extra = {}) => {
     let reason;
     if (newStatus === 'cancelled') {
       reason = window.prompt('Reason for cancellation (shown to the customer in the email):', '');
@@ -312,7 +314,7 @@ function WebsiteBookings({ token }) {
     setNotice(null);
     try {
       const { data } = await axios.patch(`${API_URL}/api/admins/website/bookings/${bookingId}`,
-        { status: newStatus, ...(reason !== undefined ? { cancelReason: reason } : {}) },
+        { status: newStatus, ...(reason !== undefined ? { cancelReason: reason } : {}), ...extra },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchBookings();
@@ -320,20 +322,55 @@ function WebsiteBookings({ token }) {
         setSelectedBooking((prev) => ({ ...prev, ...data.data, assignedPartner: prev.assignedPartner, status: newStatus }));
       }
       const mail = data.email;
-      if (mail?.emailSent) setNotice({ type: 'success', text: `Status updated. Email sent to ${data.data?.passenger?.email}.` });
+      const dMail = data.driverEmail;
+      if (extra.assignedDriver) {
+        const parts = [];
+        parts.push(mail?.emailSent ? `Email sent to customer (${data.data?.passenger?.email})` : mail?.skipped === 'no_email' ? 'Customer has no email, so no mail was sent to them' : 'Customer email could not be sent');
+        parts.push(dMail?.emailSent ? `Email sent to driver (${data.data?.assignedDriver?.email})` : dMail?.skipped === 'no_driver_email' ? 'No driver email entered, so the driver was not emailed' : 'Driver email could not be sent');
+        const allOk = mail?.emailSent && dMail?.emailSent;
+        setNotice({ type: allOk ? 'success' : 'warn', text: `Driver assigned. ${parts.join('. ')}.` });
+      } else if (mail?.emailSent) setNotice({ type: 'success', text: `Status updated. Email sent to ${data.data?.passenger?.email}.` });
       else if (mail?.skipped === 'no_email') setNotice({ type: 'warn', text: 'Status updated. No email sent: customer did not give an email address.' });
       else if (mail) setNotice({ type: 'warn', text: 'Status updated, but the email could not be sent. Check EMAIL_ENABLED and Brevo settings on the server.' });
       else setNotice({ type: 'success', text: 'Status updated.' });
     } catch (err) {
       console.error('Status update failed:', err);
-      setNotice({ type: 'error', text: err.response?.data?.message || 'Could not update the status. Please try again.' });
+      const msg = err.response?.data?.message || 'Could not update the status. Please try again.';
+      setNotice({ type: 'error', text: msg });
+      if (extra.assignedDriver) setDriverError(msg);
+      return false;
     } finally {
       setUpdatingStatus(false);
     }
+    return true;
+  };
+
+  // The driver that is on this booking: typed-in details first, a linked partner record as fallback.
+  const driverOf = (b) => (b?.assignedDriver?.name ? b.assignedDriver : b?.assignedPartner?.name ? b.assignedPartner : null);
+
+  const openDriverForm = () => {
+    const d = driverOf(selectedBooking) || {};
+    setDriverError('');
+    setNotice(null);
+    setDriverForm({ name: d.name || '', phone: d.phone || '', email: d.email || '', vehicleNumber: d.vehicleNumber || '', vehicleModel: d.vehicleModel || '' });
+  };
+
+  const submitDriver = async (e) => {
+    e.preventDefault();
+    setDriverError('');
+    const name = driverForm.name.trim();
+    const phone = driverForm.phone.replace(/\D/g, '').slice(-10);
+    if (!name) return setDriverError('Enter the driver name.');
+    if (phone.length !== 10) return setDriverError('Enter a valid 10-digit driver mobile number.');
+    if (driverForm.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(driverForm.email.trim())) return setDriverError('Enter a valid driver email address.');
+    const ok = await handleStatusUpdate(selectedBooking.bookingId, 'assigned', { assignedDriver: { ...driverForm, name, phone } });
+    if (ok) setDriverForm(null);
   };
 
   const openDetail = async (booking) => {
     setNotice(null);
+    setDriverForm(null);
+    setDriverError('');
     setSelectedBooking(booking);
     setDetailModal(true);
     try {
@@ -549,8 +586,8 @@ function WebsiteBookings({ token }) {
                     <span className="inline-flex items-center gap-1 font-semibold text-gray-900"><Clock className="w-3.5 h-3.5 text-blue-500" /> {formatTripTime(b.trip?.time)}</span>
                     <span className="capitalize text-gray-500">{b.trip?.tripType === 'airport' && b.trip?.airportDir ? `Airport ${b.trip.airportDir === 'from' ? 'pickup' : 'drop'}` : b.trip?.tripType}{b.trip?.distanceKm ? ` · ${b.trip.distanceKm} km` : ''}</span>
                   </div>
-                  {b.assignedPartner?.name && (
-                    <p className="text-xs text-indigo-600 flex items-center gap-1"><Car className="w-3.5 h-3.5" /> {b.assignedPartner.name}{b.assignedPartner.vehicleNumber ? ` · ${b.assignedPartner.vehicleNumber}` : ''}</p>
+                  {driverOf(b) && (
+                    <p className="text-xs text-indigo-600 flex items-center gap-1"><Car className="w-3.5 h-3.5" /> {driverOf(b).name}{driverOf(b).vehicleNumber ? ` · ${driverOf(b).vehicleNumber}` : ''}</p>
                   )}
                 </div>
 
@@ -645,8 +682,8 @@ function WebsiteBookings({ token }) {
                     <td className="px-4 py-4">
                       <p className="font-semibold text-gray-800">{b.vehicle?.name}</p>
                       <p className="text-xs text-gray-400">{b.vehicle?.model}</p>
-                      {b.assignedPartner?.name && (
-                        <p className="text-xs text-indigo-600 mt-1 flex items-center gap-1"><Car className="w-3 h-3" /> {b.assignedPartner.name}</p>
+                      {driverOf(b) && (
+                        <p className="text-xs text-indigo-600 mt-1 flex items-center gap-1"><Car className="w-3 h-3" /> {driverOf(b).name}</p>
                       )}
                     </td>
                     <td className="px-4 py-4 min-w-[210px]">
@@ -834,16 +871,24 @@ function WebsiteBookings({ token }) {
               {/* Driver / notes */}
               {(
                 <div className="bg-indigo-50 rounded-xl p-4">
-                  <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2"><Car className="w-4 h-4" /> Driver &amp; Notes</h4>
+                  <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2"><Car className="w-4 h-4" /> Driver &amp; Notes
+                    {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'completed' && (
+                      <button type="button" onClick={openDriverForm} className="ml-auto text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-100 px-3 py-1 rounded-lg">
+                        {driverOf(selectedBooking) ? 'Edit driver' : 'Assign driver'}
+                      </button>
+                    )}
+                  </h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    {!selectedBooking.assignedPartner?.name && (
+                    {!driverOf(selectedBooking) && (
                       <div className="col-span-2"><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-500 italic">Not assigned yet</p></div>
                     )}
-                    {selectedBooking.assignedPartner?.name && (
+                    {driverOf(selectedBooking) && (
                       <>
-                        <div><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.name}</p></div>
-                        <div><p className="text-xs text-indigo-500">Driver Phone</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.phone || '—'}</p></div>
-                        <div><p className="text-xs text-indigo-500">Vehicle Number</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.vehicleNumber || '—'}</p></div>
+                        <div><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-900">{driverOf(selectedBooking).name}</p></div>
+                        <div><p className="text-xs text-indigo-500">Driver Phone</p><p className="font-semibold text-gray-900">{driverOf(selectedBooking).phone ? <a href={`tel:${driverOf(selectedBooking).phone}`} className="text-blue-700 hover:underline">{driverOf(selectedBooking).phone}</a> : '—'}</p></div>
+                        <div><p className="text-xs text-indigo-500">Vehicle Number</p><p className="font-semibold text-gray-900">{driverOf(selectedBooking).vehicleNumber || '—'}</p></div>
+                        {driverOf(selectedBooking).vehicleModel && <div><p className="text-xs text-indigo-500">Vehicle</p><p className="font-semibold text-gray-900">{driverOf(selectedBooking).vehicleModel}</p></div>}
+                        {driverOf(selectedBooking).email && <div className="col-span-2"><p className="text-xs text-indigo-500">Driver Email</p><p className="font-semibold text-gray-900 break-all">{driverOf(selectedBooking).email}</p></div>}
                       </>
                     )}
                     {selectedBooking.cancelReason && (
@@ -886,8 +931,8 @@ function WebsiteBookings({ token }) {
                   {['confirmed', 'assigned', 'in_progress', 'completed', 'cancelled'].map((s) => (
                     <button
                       key={s}
-                      disabled={selectedBooking.status === s || updatingStatus}
-                      onClick={() => handleStatusUpdate(selectedBooking.bookingId, s)}
+                      disabled={(selectedBooking.status === s && !(s === 'assigned')) || updatingStatus}
+                      onClick={() => (s === 'assigned' ? openDriverForm() : handleStatusUpdate(selectedBooking.bookingId, s))}
                       className={cn(
                         'px-3 py-1.5 text-xs font-semibold rounded-lg capitalize border transition-colors disabled:opacity-50',
                         selectedBooking.status === s
@@ -899,6 +944,44 @@ function WebsiteBookings({ token }) {
                     </button>
                   ))}
                 </div>
+
+                {driverForm && (
+                  <form onSubmit={submitDriver} className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-semibold text-indigo-900 text-sm flex items-center gap-2"><Car className="w-4 h-4" /> Driver details</h5>
+                      <button type="button" onClick={() => setDriverForm(null)} aria-label="Close" className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-white"><X className="w-4 h-4" /></button>
+                    </div>
+                    <p className="text-xs text-gray-600">These details are emailed to the customer, and the trip details are emailed to the driver (if a driver email is given).</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        ['name', 'Driver name *', 'text', 'e.g. Ramesh Kumar'],
+                        ['phone', 'Driver mobile *', 'tel', '10-digit number'],
+                        ['vehicleNumber', 'Vehicle number', 'text', 'e.g. DL1CAB1234'],
+                        ['vehicleModel', 'Vehicle model', 'text', 'e.g. Dzire White'],
+                      ].map(([k, label, type, ph]) => (
+                        <label key={k} className="block">
+                          <span className="block text-xs font-semibold text-gray-600 mb-1">{label}</span>
+                          <input type={type} value={driverForm[k]} placeholder={ph} inputMode={k === 'phone' ? 'numeric' : undefined}
+                            onChange={(e) => setDriverForm((f) => ({ ...f, [k]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-200 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" />
+                        </label>
+                      ))}
+                      <label className="block sm:col-span-2">
+                        <span className="block text-xs font-semibold text-gray-600 mb-1">Driver email (to send the trip details)</span>
+                        <input type="email" value={driverForm.email} placeholder="driver@example.com"
+                          onChange={(e) => setDriverForm((f) => ({ ...f, email: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-200 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" />
+                      </label>
+                    </div>
+                    {driverError && <p className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{driverError}</p>}
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      <button type="button" onClick={() => setDriverForm(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-white">Cancel</button>
+                      <button type="submit" disabled={updatingStatus} className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-60">
+                        {updatingStatus ? 'Saving...' : 'Save & send emails'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           </div>
