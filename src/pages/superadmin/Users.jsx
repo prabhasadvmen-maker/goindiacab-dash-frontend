@@ -258,7 +258,7 @@ export default function Users() {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <span className="text-sm text-gray-500">
               Showing page <span className="font-semibold text-gray-900">{page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
             </span>

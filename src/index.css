@@ -37,3 +37,53 @@ body {
     background: #64748b;
   }
 }
+/* ───────── Mobile ───────── */
+html, body { -webkit-text-size-adjust: 100%; }
+img, video, svg { max-width: 100%; }
+
+@media (max-width: 767px) {
+  /* 16px inputs stop iOS from zooming the page on focus; larger tap targets. */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; }
+  main button, main select { min-height: 36px; }
+
+  /* Tables become stacked cards. Cells are labelled with their column heading by SuperAdminLayout. */
+  main table { min-width: 0 !important; width: 100% !important; }
+  main table thead { display: none; }
+  main table tbody, main table tr, main table td { display: block; width: 100%; }
+  main table tbody { padding: 8px; }
+  main table tbody tr {
+    margin-bottom: 10px;
+    padding: 6px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  }
+  main table tbody tr:last-child { margin-bottom: 0; }
+  main table td {
+    padding: 9px 0 !important;
+    border-bottom: 1px dashed #eef0f3;
+    text-align: left !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  main table td:last-child { border-bottom: 0; }
+  main table td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #9ca3af;
+  }
+  /* Action cell: label hidden, buttons aligned to the right */
+  main table td:last-child:is([data-label="Action"], [data-label="Actions"], [data-label=""]) { text-align: right !important; }
+  main table td:last-child:is([data-label="Action"], [data-label="Actions"])::before { display: none; }
+  /* Empty / loading rows span the full table */
+  main table tbody tr[data-full-row] { padding: 0; border: 0 !important; box-shadow: none; background: transparent; }
+  main table tbody tr[data-full-row] td { border: 0; }
+  main table tbody tr.animate-pulse td > div { width: 100% !important; }
+  main table td .truncate { max-width: 100% !important; }
+}

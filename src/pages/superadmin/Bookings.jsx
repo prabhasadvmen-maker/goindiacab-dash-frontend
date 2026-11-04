@@ -234,7 +234,7 @@ function AppBookings({ token }) {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <span className="text-sm text-gray-500">
               Page <span className="font-semibold text-gray-900">{page}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
               {' '}· {totalBookings} total
@@ -355,7 +355,42 @@ function WebsiteBookings({ token }) {
     failed: 'bg-red-100 text-red-800',
   };
 
-  const formatDate = (s) => s ? new Date(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  const IST = { timeZone: 'Asia/Kolkata' };
+  const formatDate = (s) => s ? new Date(s).toLocaleString('en-IN', { ...IST, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—';
+
+  // Trip date ("YYYY-MM-DD") + time ("HH:mm") are stored as plain strings in IST: format them without timezone shifts.
+  const formatTripDate = (d) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    if (!m) return d || '—';
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  };
+  const formatTripTime = (t) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t || '');
+    if (!m) return t || '';
+    const h = +m[1];
+    return `${h % 12 || 12}:${m[2]} ${h >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  // What was really received vs what is still due. fare.paidNow is only the amount asked for online, not money received.
+  const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+  const getPaymentInfo = (b) => {
+    const total = Number(b.fare?.total) || 0;
+    const isCash = b.fare?.paymentOption === 'cash';
+    const received = b.payment?.status === 'paid' ? (Number(b.payment?.paidAmount) || Number(b.fare?.paidNow) || 0) : 0;
+    const cancelled = b.status === 'cancelled';
+    const balance = cancelled ? 0 : Math.max(0, total - received);
+    const awaiting = !isCash && !cancelled && b.payment?.status !== 'paid' ? Number(b.fare?.paidNow) || 0 : 0;
+    return { total, isCash, received, balance, awaiting };
+  };
+  // A booking is saved as "confirmed" before the customer pays. Online bookings are only really confirmed once paid.
+  const getDisplayStatus = (b) => {
+    if (b.status === 'confirmed' && b.fare?.paymentOption !== 'cash' && b.payment?.status !== 'paid') {
+      return b.payment?.status === 'failed' ? 'payment_failed' : 'awaiting_payment';
+    }
+    return b.status;
+  };
+  const STATUS_LABELS = { awaiting_payment: 'Awaiting payment', payment_failed: 'Payment failed' };
+  const PAYMENT_LABELS ={ paid: 'Paid online', pending: 'Pending', failed: 'Failed' };
 
   return (
     <div className="space-y-4">
@@ -408,17 +443,17 @@ function WebsiteBookings({ token }) {
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
+          <table className="w-full min-w-[1150px] text-left text-sm text-gray-600">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-5 py-4 font-bold">Booking ID</th>
-                <th className="px-5 py-4 font-bold">Passenger</th>
-                <th className="px-5 py-4 font-bold">Route & Date</th>
-                <th className="px-5 py-4 font-bold">Vehicle</th>
-                <th className="px-5 py-4 font-bold">Fare</th>
-                <th className="px-5 py-4 font-bold">Payment</th>
-                <th className="px-5 py-4 font-bold">Status</th>
-                <th className="px-5 py-4 font-bold text-right">Action</th>
+                <th className="px-4 py-4 font-bold">Booking ID / Booked On</th>
+                <th className="px-4 py-4 font-bold">Passenger</th>
+                <th className="px-4 py-4 font-bold">Route</th>
+                <th className="px-4 py-4 font-bold">Trip Date & Time</th>
+                <th className="px-4 py-4 font-bold">Vehicle</th>
+                <th className="px-4 py-4 font-bold">Payment Summary</th>
+                <th className="px-4 py-4 font-bold">Status</th>
+                <th className="px-4 py-4 font-bold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -441,49 +476,74 @@ function WebsiteBookings({ token }) {
                   </td>
                 </tr>
               ) : (
-                bookings.map((b) => (
-                  <tr key={b._id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-4">
+                bookings.map((b) => {
+                  const pay = getPaymentInfo(b);
+                  return (
+                  <tr key={b._id} className="hover:bg-slate-50/50 transition-colors align-top">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <p className="font-bold text-amber-700 font-mono text-xs">{b.bookingId}</p>
-                      <p className="text-xs text-gray-400">{formatDate(b.createdAt)}</p>
+                      <p className="text-[11px] text-gray-400 mt-1">Booked on</p>
+                      <p className="text-xs text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDate(b.createdAt)}</p>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-4">
                       <p className="font-semibold text-gray-900">{b.passenger?.name}</p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <p className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap">
                         <Phone className="w-3 h-3" /> {b.passenger?.mobile}
                       </p>
                       {b.passenger?.email && (
-                        <p className="text-xs text-gray-400 flex items-center gap-1 truncate max-w-[160px]">
-                          <Mail className="w-3 h-3" /> {b.passenger.email}
+                        <p className="text-xs text-gray-400 flex items-center gap-1 truncate max-w-[170px]" title={b.passenger.email}>
+                          <Mail className="w-3 h-3 shrink-0" /> {b.passenger.email}
                         </p>
                       )}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                        {b.trip?.from} <ArrowRight className="w-3 h-3 text-gray-400 shrink-0" /> {b.trip?.to || 'Local'}
-                      </div>
-                      <p className="text-xs text-gray-400">{b.trip?.date} at {b.trip?.time}</p>
-                      <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded capitalize">{b.trip?.tripType}</span>
+                    <td className="px-4 py-4 min-w-[170px]">
+                      <p className="font-medium text-gray-800 leading-snug">{b.trip?.from}</p>
+                      <p className="text-gray-400 text-xs flex items-center gap-1"><ArrowRight className="w-3 h-3 shrink-0" /> {b.trip?.to || 'Local'}</p>
+                      <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded capitalize">
+                        {b.trip?.tripType === 'airport' && b.trip?.airportDir ? `Airport ${b.trip.airportDir === 'from' ? 'pickup' : 'drop'}` : b.trip?.tripType}
+                        {b.trip?.distanceKm ? ` · ${b.trip.distanceKm} km` : ''}
+                      </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <p className="font-semibold text-gray-900 flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-blue-500" /> {formatTripDate(b.trip?.date)}</p>
+                      <p className="text-xs text-gray-600 flex items-center gap-1 mt-0.5"><Clock className="w-3 h-3 text-blue-500" /> {formatTripTime(b.trip?.time)}</p>
+                      {b.trip?.tripType === 'roundtrip' && b.trip?.returnDate && (
+                        <p className="text-xs text-gray-400 mt-0.5">Return: {formatTripDate(b.trip.returnDate)}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
                       <p className="font-semibold text-gray-800">{b.vehicle?.name}</p>
                       <p className="text-xs text-gray-400">{b.vehicle?.model}</p>
+                      {b.assignedPartner?.name && (
+                        <p className="text-xs text-indigo-600 mt-1 flex items-center gap-1"><Car className="w-3 h-3" /> {b.assignedPartner.name}</p>
+                      )}
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-gray-900">₹{b.fare?.total}</p>
-                      <p className="text-xs text-gray-400">{b.fare?.paymentOption === 'cash' ? `Pay to driver: ₹${b.fare?.payLater}` : `Paid: ₹${b.fare?.paidNow} | Later: ₹${b.fare?.payLater}`}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={cn('px-2 py-0.5 text-xs font-semibold rounded-full capitalize', PAYMENT_COLORS[b.payment?.status] || 'bg-gray-100 text-gray-600')}>
-                        {b.payment?.status}
+                    <td className="px-4 py-4 min-w-[210px]">
+                      <div className="space-y-0.5 text-xs">
+                        <div className="flex justify-between gap-4"><span className="text-gray-500">Total fare</span><span className="font-bold text-gray-900 text-sm">{money(pay.total)}</span></div>
+                        <div className="flex justify-between gap-4"><span className="text-gray-500">Received</span><span className={cn('font-semibold', pay.received > 0 ? 'text-green-700' : 'text-gray-400')}>{money(pay.received)}</span></div>
+                        <div className="flex justify-between gap-4 border-t border-gray-100 pt-0.5">
+                          <span className="text-gray-500">{pay.isCash ? 'Pay to driver' : 'Balance due'}</span>
+                          <span className={cn('font-semibold', pay.balance > 0 ? 'text-red-600' : 'text-green-700')}>{money(pay.balance)}</span>
+                        </div>
+                        {pay.awaiting > 0 && <p className="text-[11px] text-amber-600">Online {money(pay.awaiting)} not received yet</p>}
+                      </div>
+                      <span className={cn('inline-block mt-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full', PAYMENT_COLORS[b.payment?.status] || 'bg-gray-100 text-gray-600')}>
+                        {pay.isCash && b.payment?.status !== 'paid' ? 'Cash to driver' : PAYMENT_LABELS[b.payment?.status] || 'Pending'}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={cn('px-2 py-0.5 text-xs font-semibold rounded-full capitalize', STATUS_COLORS[b.status] || 'bg-gray-100 text-gray-600')}>
-                        {b.status?.replace('_', ' ')}
-                      </span>
+                    <td className="px-4 py-4">
+                      {(() => {
+                        const ds = getDisplayStatus(b);
+                        return (
+                          <span className={cn('px-2 py-0.5 text-xs font-semibold rounded-full capitalize whitespace-nowrap',
+                            ds === 'awaiting_payment' ? 'bg-yellow-100 text-yellow-800' : ds === 'payment_failed' ? 'bg-red-100 text-red-800' : STATUS_COLORS[ds] || 'bg-gray-100 text-gray-600')}>
+                            {STATUS_LABELS[ds] || ds?.replace('_', ' ')}
+                          </span>
+                        );
+                      })()}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-4 text-right">
                       <button
                         onClick={() => openDetail(b)}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
@@ -492,7 +552,8 @@ function WebsiteBookings({ token }) {
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -500,7 +561,7 @@ function WebsiteBookings({ token }) {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <span className="text-sm text-gray-500">Page {page} of {totalPages} · {total} total</span>
             <div className="flex space-x-2">
               <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}
@@ -519,7 +580,7 @@ function WebsiteBookings({ token }) {
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">{selectedBooking.bookingId}</h3>
-                <p className="text-xs text-gray-400">{formatDate(selectedBooking.createdAt)}</p>
+                <p className="text-xs text-gray-400">Booked on {formatDate(selectedBooking.createdAt)}</p>
               </div>
               <button onClick={() => setDetailModal(false)} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100">
                 <X className="w-5 h-5" />
@@ -552,7 +613,7 @@ function WebsiteBookings({ token }) {
                   {selectedBooking.trip?.stop && (
                     <div><p className="text-xs text-amber-500">Stop</p><p className="font-semibold text-gray-900">{selectedBooking.trip.stop}</p></div>
                   )}
-                  <div><p className="text-xs text-amber-500">Date & Time</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.date} at {selectedBooking.trip?.time}</p></div>
+                  <div><p className="text-xs text-amber-500">Date & Time</p><p className="font-semibold text-gray-900">{formatTripDate(selectedBooking.trip?.date)}, {formatTripTime(selectedBooking.trip?.time)}</p></div>
                   <div><p className="text-xs text-amber-500">Type</p><p className="font-semibold text-gray-900 capitalize">{selectedBooking.trip?.tripType === 'airport' && selectedBooking.trip?.airportDir ? `Airport ${selectedBooking.trip.airportDir === 'from' ? 'Pickup' : 'Drop'}` : selectedBooking.trip?.tripType}</p></div>
                   {selectedBooking.trip?.package && (
                     <div><p className="text-xs text-amber-500">Package</p><p className="font-semibold text-gray-900">{selectedBooking.trip.package}</p></div>
@@ -578,8 +639,9 @@ function WebsiteBookings({ token }) {
                       ? [[`Coupon Discount${selectedBooking.fare.couponCode ? ` (${selectedBooking.fare.couponCode})` : ''}`, -selectedBooking.fare.discount]]
                       : []),
                     ['Total', selectedBooking.fare?.total],
-                    ['Paid Now', selectedBooking.fare?.paidNow],
-                    ['Pay Later (to driver)', selectedBooking.fare?.payLater],
+                    ['Online amount requested', selectedBooking.fare?.paidNow],
+                    ['Received so far', getPaymentInfo(selectedBooking).received],
+                    ['Balance (to driver)', getPaymentInfo(selectedBooking).balance],
                   ].map(([label, val]) => (
                     <div key={label} className={cn('flex justify-between', label === 'Total' && 'font-bold border-t border-green-200 pt-1.5 mt-1.5')}>
                       <span className="text-green-700">{label}</span>
@@ -703,13 +765,13 @@ export default function Bookings() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-3 px-5 py-4 rounded-xl border transition-all text-left',
+              'flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-xl border transition-all text-left',
               activeTab === tab.id
                 ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:bg-blue-50'

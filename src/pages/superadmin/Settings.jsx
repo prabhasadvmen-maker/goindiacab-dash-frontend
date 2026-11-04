@@ -88,7 +88,7 @@ export default function Settings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Platform Settings</h2>
           <p className="text-gray-500 mt-1">Configure global application variables.</p>
@@ -185,7 +185,7 @@ export default function Settings() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center flex-wrap gap-2">
             <div>
               <h3 className="font-bold text-gray-900 text-lg">System Status</h3>
               <p className="text-sm text-gray-500">Manage application availability.</p>
@@ -214,7 +214,7 @@ export default function Settings() {
 
         {/* Mobile App Controls */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center flex-wrap gap-2">
             <div>
               <h3 className="font-bold text-gray-900 text-lg">App Configuration</h3>
               <p className="text-sm text-gray-500">Manage Android app versions and features.</p>

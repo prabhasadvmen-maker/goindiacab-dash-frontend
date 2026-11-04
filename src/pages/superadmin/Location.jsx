@@ -104,7 +104,7 @@ export default function Location() {
   return (
     <div className="p-4 md:p-6 h-full flex flex-col space-y-4">
       {/* Header Panel */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center shrink-0">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center shrink-0 flex-wrap gap-2">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center relative">
             <MapPin className="w-5 h-5" />

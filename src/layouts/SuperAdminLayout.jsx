@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { 
@@ -19,7 +19,8 @@ import {
   Globe,
   Truck,
   Ticket,
-  MessageSquareWarning
+  MessageSquareWarning,
+  X
 } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -32,7 +33,57 @@ export default function SuperAdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { superAdminUser: user, superAdminLogout: logout } = useAuthStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  const mainRef = useRef(null);
+
+  // Below 768px the sidebar becomes an off-canvas drawer and always shows full labels.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = (e) => { setIsMobile(e.matches); if (!e.matches) setMobileOpen(false); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Close drawer / profile menu on navigation, and reset scroll.
+  useEffect(() => {
+    setMobileOpen(false);
+    setProfileOpen(false);
+    mainRef.current?.scrollTo?.(0, 0);
+  }, [location.pathname]);
+
+  // Lock background scroll while the drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = isMobile && mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile, mobileOpen]);
+
+  // Tables turn into stacked cards on phones (see index.css): copy each column heading onto its cells as data-label.
+  useEffect(() => {
+    const root = mainRef.current;
+    if (!root) return undefined;
+    const label = () => {
+      root.querySelectorAll('table').forEach((table) => {
+        const heads = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+        if (!heads.length) return;
+        table.querySelectorAll('tbody tr').forEach((tr) => {
+          const cells = [...tr.children];
+          if (cells.some((c) => c.colSpan > 1)) { tr.dataset.fullRow = '1'; return; }
+          cells.forEach((c, i) => { if (c.dataset.label !== (heads[i] || '')) c.dataset.label = heads[i] || ''; });
+        });
+      });
+    };
+    label();
+    let raf = 0;
+    const observer = new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(label); });
+    observer.observe(root, { childList: true, subtree: true });
+    return () => { observer.disconnect(); cancelAnimationFrame(raf); };
+  }, []);
+
+  const isSidebarOpen = isMobile ? true : isDesktopOpen;
+  const toggleSidebar = () => (isMobile ? setMobileOpen((v) => !v) : setIsDesktopOpen((v) => !v));
 
   const handleLogout = () => {
     logout();
@@ -69,7 +120,7 @@ export default function SuperAdminLayout() {
     <NavLink
       to={item.path}
       className={({ isActive }) => cn(
-        "flex items-center px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden",
+        "flex items-center px-4 py-3.5 md:py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-300 relative group overflow-hidden",
         isActive 
           ? "bg-[#F59E0B] text-white font-bold shadow-md" 
           : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -91,12 +142,19 @@ export default function SuperAdminLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-dvh bg-slate-50 overflow-hidden">
+      {/* Mobile drawer backdrop */}
+      {isMobile && mobileOpen && (
+        <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+      )}
+
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-slate-900 border-r border-slate-800 flex flex-col z-20 transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "w-64" : "w-20"
+          "bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 ease-in-out",
+          isMobile
+            ? cn("fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] shadow-2xl", mobileOpen ? "translate-x-0" : "-translate-x-full")
+            : cn("z-20", isSidebarOpen ? "w-64" : "w-20")
         )}
       >
         {/* Sidebar Header */}
@@ -115,6 +173,11 @@ export default function SuperAdminLayout() {
               <h1 className="font-bold text-sm uppercase text-white tracking-wider">Goindiacab</h1>
               <p className="text-xs font-semibold text-[#F59E0B] mt-0.5">Super Admin</p>
             </div>
+            {isMobile && (
+              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="ml-auto p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -140,20 +203,21 @@ export default function SuperAdminLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10 shrink-0">
-          <div className="flex items-center">
+        <header className="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm z-10 shrink-0">
+          <div className="flex items-center min-w-0">
             <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 mr-4 text-gray-500 hover:bg-orange-50 hover:text-[#fa9600] rounded-lg transition-colors"
+              onClick={toggleSidebar}
+              aria-label="Toggle menu"
+              className="p-2 mr-2 sm:mr-4 text-gray-500 hover:bg-orange-50 hover:text-[#fa9600] rounded-lg transition-colors shrink-0"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl font-semibold text-gray-800 hidden sm:block">{currentPage}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">{currentPage}</h2>
           </div>
 
-          <div className="flex items-center">
-            <div className="group relative">
-              <button className="flex items-center space-x-3 bg-gray-50 hover:bg-orange-50 p-2 rounded-xl border border-gray-200 transition-colors">
+          <div className="flex items-center shrink-0 ml-2">
+            <div className="relative">
+              <button onClick={() => setProfileOpen((v) => !v)} aria-label="Account menu" className="flex items-center space-x-3 bg-gray-50 hover:bg-orange-50 p-2 rounded-xl border border-gray-200 transition-colors">
                 <div className="text-right hidden md:block">
                   <p className="text-sm font-semibold text-gray-800">{user?.email || 'admin@goindiacab.com'}</p>
                   <p className="text-xs text-gray-500">Super Admin</p>
@@ -163,7 +227,8 @@ export default function SuperAdminLayout() {
                 </div>
               </button>
 
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              {profileOpen && <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />}
+              <div className={cn("absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-lg py-1 border border-gray-100 z-20 transition-all duration-200", profileOpen ? "opacity-100 visible" : "opacity-0 invisible")}>
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-800">Super Admin</p>
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
@@ -181,7 +246,7 @@ export default function SuperAdminLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-8">
+        <main ref={mainRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-3 sm:p-4 md:p-8">
           <Outlet />
         </main>
       </div>

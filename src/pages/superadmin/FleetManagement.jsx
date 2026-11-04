@@ -809,8 +809,8 @@ export default function FleetManagement() {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="col-span-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="sm:col-span-2">
                                 <Field label="Label">
                                   <input value={pkg.label} onChange={(e) => handlePackageChange(idx, 'label', e.target.value)} placeholder="8 Hrs / 80 Km" className={inputCls} />
                                 </Field>

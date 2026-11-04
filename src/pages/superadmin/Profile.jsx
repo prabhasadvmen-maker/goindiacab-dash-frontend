@@ -81,7 +81,7 @@ export default function Profile() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Admin Profile</h2>
           <p className="text-gray-500 mt-1">Manage your personal information and security.</p>

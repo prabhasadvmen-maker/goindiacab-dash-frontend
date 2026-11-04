@@ -192,7 +192,7 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
                 <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Cab with Luggage Carrier" className={inputCls} />
                 <span className="text-xs text-gray-400 mt-1 block">Tip: write <b>{'{city}'}</b> to insert the destination city, e.g. “Pause in {'{city}'} &amp; Go (Up to 6 hours)”.</span>
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-semibold text-gray-600 mb-1.5 block">Price (₹) <span className="text-red-500">*</span></span>
                   <input type="number" min={0} step="0.1" value={form.price} onChange={(e) => set('price', e.target.value)} className={inputCls} />
@@ -205,7 +205,7 @@ export default function JourneyAddons({ api, canWrite, showToast }) {
                   </select>
                 </label>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-semibold text-gray-600 mb-1.5 block">Badge (optional)</span>
                   <input value={form.badge} onChange={(e) => set('badge', e.target.value)} placeholder="Most Popular" className={inputCls} />

@@ -391,7 +391,7 @@ export default function CouponManagement() {
                 </div>
 
                 {canWrite && (
-                  <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
                     <button onClick={() => handleToggle(c)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900">
                       {c.isActive ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5 text-gray-400" />}
                       {c.isActive ? 'Disable' : 'Enable'}

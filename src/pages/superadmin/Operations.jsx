@@ -146,7 +146,7 @@ export default function Operations() {
           { label: 'Pending Bookings', value: stats.pendingBookings, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
           { label: 'Completed Today', value: stats.completedToday, icon: CheckCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
         ].map((stat, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">{stat.label}</p>
               <h3 className="text-3xl font-black text-gray-900">{stat.value}</h3>
@@ -196,7 +196,7 @@ export default function Operations() {
               Live Bookings Feed
             </div>
             {/* Status Filter */}
-            <div className="flex items-center space-x-2 text-sm bg-gray-50 p-1 rounded-lg">
+            <div className="flex items-center space-x-2 text-sm bg-gray-50 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
               {['all', 'pending', 'ongoing', 'completed'].map(status => (
                 <button
                   key={status}
@@ -311,7 +311,7 @@ export default function Operations() {
           
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3 bg-white">
               <span className="text-sm text-gray-500">
                 Page <span className="font-semibold text-gray-900">{page}</span> of {totalPages}
               </span>
