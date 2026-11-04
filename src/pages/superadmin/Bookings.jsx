@@ -263,6 +263,9 @@ function WebsiteBookings({ token }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [dateField, setDateField] = useState('trip'); // 'trip' = travel date, 'booked' = booking date
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -277,7 +280,7 @@ function WebsiteBookings({ token }) {
     try {
       const { data } = await axios.get(`${API_URL}/api/admins/website/bookings`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { page, limit: 10, status: statusFilter, payment: paymentFilter, search }
+        params: { page, limit: 10, status: statusFilter, payment: paymentFilter, search, dateField, from: dateFrom || undefined, to: dateTo || undefined }
       });
       if (data.success) {
         setBookings(data.data || []);
@@ -289,7 +292,7 @@ function WebsiteBookings({ token }) {
     } finally {
       setLoading(false);
     }
-  }, [token, page, statusFilter, paymentFilter, search]);
+  }, [token, page, statusFilter, paymentFilter, search, dateField, dateFrom, dateTo]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -355,6 +358,12 @@ function WebsiteBookings({ token }) {
     failed: 'bg-red-100 text-red-800',
   };
 
+  // Calendar filter helpers (dates are India-time days, YYYY-MM-DD)
+  const istDay = (offset = 0) => new Date(Date.now() + 5.5 * 3600000 + offset * 86400000).toISOString().slice(0, 10);
+  const setRange = (from, to) => { setDateFrom(from); setDateTo(to); setPage(1); };
+  const hasDate = !!(dateFrom || dateTo);
+  const activeQuick = hasDate && dateFrom === dateTo ? (dateFrom === istDay(0) ? 'today' : dateFrom === istDay(1) ? 'tomorrow' : dateFrom === istDay(-1) ? 'yesterday' : '') : '';
+
   const IST = { timeZone: 'Asia/Kolkata' };
   const formatDate = (s) => s ? new Date(s).toLocaleString('en-IN', { ...IST, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—';
 
@@ -395,7 +404,7 @@ function WebsiteBookings({ token }) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row lg:flex-wrap justify-between items-center gap-4">
         <div className="flex flex-wrap gap-2 w-full lg:w-auto">
           <div className="flex space-x-1 bg-gray-100/50 p-1 rounded-xl overflow-x-auto no-scrollbar border border-gray-200/50">
             {['all', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled'].map((s) => (
@@ -438,6 +447,48 @@ function WebsiteBookings({ token }) {
             Search
           </button>
         </form>
+
+        {/* Calendar / date filter */}
+        <div className="w-full lg:basis-full flex flex-col md:flex-row md:items-center gap-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 shrink-0">
+            <CalendarDays className="w-4 h-4 text-blue-600" /> Filter by date
+          </div>
+          <div className="flex space-x-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200/50 self-start">
+            {[['trip', 'Trip date'], ['booked', 'Booked on']].map(([v, l]) => (
+              <button key={v} type="button" onClick={() => { setDateField(v); setPage(1); }}
+                className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all',
+                  dateField === v ? 'bg-white text-blue-600 shadow-sm border border-gray-200/60' : 'text-gray-500 hover:bg-gray-200/50')}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="date" aria-label="From date" value={dateFrom} max={dateTo || undefined}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              className="min-w-0 flex-1 md:flex-none px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            <span className="text-gray-400 text-sm">to</span>
+            <input type="date" aria-label="To date" value={dateTo} min={dateFrom || undefined}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              className="min-w-0 flex-1 md:flex-none px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {[['yesterday', 'Yesterday', -1], ['today', 'Today', 0], ['tomorrow', 'Tomorrow', 1]].map(([k, l, o]) => (
+              <button key={k} type="button" onClick={() => setRange(istDay(o), istDay(o))}
+                className={cn('px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors',
+                  activeQuick === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50')}>
+                {l}
+              </button>
+            ))}
+            <button type="button" onClick={() => setRange(istDay(0), istDay(6))}
+              className="px-3 py-1.5 text-xs font-semibold rounded-full border bg-white text-gray-600 border-gray-200 hover:bg-gray-50">Next 7 days</button>
+            {hasDate && (
+              <button type="button" onClick={() => setRange('', '')}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full text-red-600 bg-red-50 border border-red-100 hover:bg-red-100">
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Table */}
