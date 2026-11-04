@@ -404,8 +404,8 @@ function WebsiteBookings({ token }) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row lg:flex-wrap justify-between items-center gap-4">
-        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex flex-wrap gap-2 w-full xl:w-auto min-w-0">
           <div className="flex space-x-1 bg-gray-100/50 p-1 rounded-xl overflow-x-auto no-scrollbar border border-gray-200/50">
             {['all', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled'].map((s) => (
               <button
@@ -433,8 +433,8 @@ function WebsiteBookings({ token }) {
             ))}
           </div>
         </div>
-        <form onSubmit={handleSearch} className="flex gap-2 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-64">
+        <form onSubmit={handleSearch} className="flex gap-2 w-full xl:w-auto">
+          <div className="relative flex-1 xl:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={searchInput}
@@ -449,41 +449,45 @@ function WebsiteBookings({ token }) {
         </form>
 
         {/* Calendar / date filter */}
-        <div className="w-full lg:basis-full flex flex-col md:flex-row md:items-center gap-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 shrink-0">
-            <CalendarDays className="w-4 h-4 text-blue-600" /> Filter by date
+        <div className="w-full flex flex-wrap items-center gap-x-5 gap-y-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 whitespace-nowrap">
+              <CalendarDays className="w-4 h-4 text-blue-600" /> Date
+            </span>
+            <div className="flex space-x-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200/50">
+              {[['trip', 'Trip date'], ['booked', 'Booked on']].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => { setDateField(v); setPage(1); }}
+                  className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all',
+                    dateField === v ? 'bg-white text-blue-600 shadow-sm border border-gray-200/60' : 'text-gray-500 hover:bg-gray-200/50')}>
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex space-x-1 bg-gray-100/50 p-1 rounded-xl border border-gray-200/50 self-start">
-            {[['trip', 'Trip date'], ['booked', 'Booked on']].map(([v, l]) => (
-              <button key={v} type="button" onClick={() => { setDateField(v); setPage(1); }}
-                className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all',
-                  dateField === v ? 'bg-white text-blue-600 shadow-sm border border-gray-200/60' : 'text-gray-500 hover:bg-gray-200/50')}>
-                {l}
-              </button>
-            ))}
-          </div>
+
           <div className="flex items-center gap-2">
             <input type="date" aria-label="From date" value={dateFrom} max={dateTo || undefined}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="min-w-0 flex-1 md:flex-none px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
-            <span className="text-gray-400 text-sm">to</span>
+              className="h-9 w-[138px] px-2.5 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            <span className="text-gray-400 text-xs font-medium">to</span>
             <input type="date" aria-label="To date" value={dateTo} min={dateFrom || undefined}
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="min-w-0 flex-1 md:flex-none px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              className="h-9 w-[138px] px-2.5 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100" />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-1.5">
             {[['yesterday', 'Yesterday', -1], ['today', 'Today', 0], ['tomorrow', 'Tomorrow', 1]].map(([k, l, o]) => (
               <button key={k} type="button" onClick={() => setRange(istDay(o), istDay(o))}
-                className={cn('px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors',
+                className={cn('h-8 px-3 text-xs font-semibold rounded-full border transition-colors whitespace-nowrap',
                   activeQuick === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50')}>
                 {l}
               </button>
             ))}
             <button type="button" onClick={() => setRange(istDay(0), istDay(6))}
-              className="px-3 py-1.5 text-xs font-semibold rounded-full border bg-white text-gray-600 border-gray-200 hover:bg-gray-50">Next 7 days</button>
+              className="h-8 px-3 text-xs font-semibold rounded-full border bg-white text-gray-600 border-gray-200 hover:bg-gray-50 whitespace-nowrap">Next 7 days</button>
             {hasDate && (
               <button type="button" onClick={() => setRange('', '')}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full text-red-600 bg-red-50 border border-red-100 hover:bg-red-100">
+                className="h-8 inline-flex items-center gap-1 px-3 text-xs font-semibold rounded-full text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 whitespace-nowrap">
                 <X className="w-3 h-3" /> Clear
               </button>
             )}
