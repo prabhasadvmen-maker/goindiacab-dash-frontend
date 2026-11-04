@@ -7,7 +7,7 @@ import { Lock, Mail } from 'lucide-react';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => (new URLSearchParams(window.location.search).get('expired') ? 'Your session has expired. Please sign in again.' : ''));
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.superAdminLogin);
