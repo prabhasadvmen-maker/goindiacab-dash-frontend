@@ -111,11 +111,11 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-80px)] overflow-y-auto pb-8">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500 md:h-[calc(100vh-80px)] md:overflow-y-auto pb-6 sm:pb-8">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Super Admin Overview</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Super Admin Overview</h1>
           <p className="text-gray-500 mt-1">{currentDate}</p>
         </div>
         <div className="flex items-center space-x-3">
@@ -134,26 +134,26 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-4 sm:mt-8">
         {statCards.map((stat, index) => (
-          <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:-translate-y-1 hover:shadow-md transition-all relative overflow-hidden">
+          <div key={index} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:-translate-y-1 hover:shadow-md transition-all relative overflow-hidden">
             {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10"></div>}
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${stat.color}`}>
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 ${stat.color}`}>
               <stat.icon className="w-6 h-6" />
             </div>
-            <h3 className="text-3xl font-bold text-gray-800 mb-1">{stat.value}</h3>
+            <h3 className="text-xl sm:text-3xl font-bold text-gray-800 mb-1 truncate">{stat.value}</h3>
             <p className="text-sm font-medium text-gray-700">{stat.title}</p>
-            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">{stat.subtitle}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">{stat.subtitle}</p>
           </div>
         ))}
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
         {/* Revenue Trend Line Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 relative">
           {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10"></div>}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center gap-2 mb-4 sm:mb-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800 flex items-center">
                  <IndianRupee className="w-5 h-5 mr-1 text-green-600"/> Revenue Trend
@@ -164,9 +164,9 @@ export default function Dashboard() {
                <TrendingUp className="w-3 h-3 mr-1" /> Live
             </span>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-52 sm:h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={analytics} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <LineChart data={analytics} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="formattedDate" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} tickFormatter={(val) => `₹${val}`} />
@@ -181,9 +181,9 @@ export default function Dashboard() {
         </div>
 
         {/* Ride Volume Bar Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 relative">
           {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10"></div>}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center gap-2 mb-4 sm:mb-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800 flex items-center">
                  <Car className="w-5 h-5 mr-1 text-blue-600"/> Ride Volume
@@ -191,9 +191,9 @@ export default function Dashboard() {
               <p className="text-xs text-gray-400 font-medium uppercase mt-1">Completed Trips (Last 7 Days)</p>
             </div>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-52 sm:h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics} margin={{ top: 5, right: 20, bottom: 5, left: 0 }} barSize={32}>
+              <BarChart data={analytics} margin={{ top: 5, right: 10, bottom: 5, left: -10 }} barSize={32}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="formattedDate" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />

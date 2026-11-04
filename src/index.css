@@ -52,8 +52,11 @@ img, video, svg { max-width: 100%; }
   main table tbody, main table tr, main table td { display: block; width: 100%; }
   main table tbody { padding: 8px; }
   main table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 14px;
     margin-bottom: 10px;
-    padding: 6px 14px;
+    padding: 12px 14px;
     background: #fff;
     border: 1px solid #e5e7eb !important;
     border-radius: 14px;
@@ -61,18 +64,22 @@ img, video, svg { max-width: 100%; }
   }
   main table tbody tr:last-child { margin-bottom: 0; }
   main table td {
-    padding: 9px 0 !important;
-    border-bottom: 1px dashed #eef0f3;
+    padding: 7px 0 !important;
     text-align: left !important;
     min-width: 0 !important;
     max-width: none !important;
+    overflow-wrap: anywhere;
   }
-  main table td:last-child { border-bottom: 0; }
-  main table td[data-label]:not([data-label=""])::before {
+  /* First cell = card title, last cell = card footer; the rest sit two per row */
+  main table td:first-child { grid-column: 1 / -1; padding-bottom: 10px !important; margin-bottom: 4px; border-bottom: 1px solid #f1f5f9; }
+  main table td:last-child:not(:first-child) { grid-column: 1 / -1; margin-top: 4px; padding-top: 10px !important; border-top: 1px solid #f1f5f9; }
+  main table td:nth-child(2):not(:last-child) { grid-column: 1 / -1; }
+  main table td:first-child[data-label]::before { display: none; }
+  main table td[data-label]:not([data-label=""]):not(:first-child)::before {
     content: attr(data-label);
     display: block;
-    margin-bottom: 3px;
-    font-size: 10.5px;
+    margin-bottom: 2px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -80,10 +87,21 @@ img, video, svg { max-width: 100%; }
   }
   /* Action cell: label hidden, buttons aligned to the right */
   main table td:last-child:is([data-label="Action"], [data-label="Actions"], [data-label=""]) { text-align: right !important; }
-  main table td:last-child:is([data-label="Action"], [data-label="Actions"])::before { display: none; }
+  main table td:last-child:is([data-label="Action"], [data-label="Actions"])::before { display: none !important; }
   /* Empty / loading rows span the full table */
   main table tbody tr[data-full-row] { padding: 0; border: 0 !important; box-shadow: none; background: transparent; }
   main table tbody tr[data-full-row] td { border: 0; }
   main table tbody tr.animate-pulse td > div { width: 100% !important; }
   main table td .truncate { max-width: 100% !important; }
+
+  /* Tighter, phone-sized spacing and type for page cards and headings */
+  main .p-6 { padding: 1rem; }
+  main .p-8 { padding: 1.25rem; }
+  main .px-6 { padding-left: 1rem; padding-right: 1rem; }
+  main .py-6 { padding-top: 1rem; padding-bottom: 1rem; }
+  main .gap-8 { gap: 1rem; }
+  main .gap-6 { gap: 1rem; }
+  main .space-y-8 > :not(:last-child) { margin-bottom: 1.25rem; }
+  main .text-3xl { font-size: 1.5rem; line-height: 2rem; }
+  main .text-2xl { font-size: 1.25rem; line-height: 1.75rem; }
 }

@@ -139,7 +139,7 @@ export default function Operations() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: 'Active Drivers', value: stats.activeDrivers, icon: Car, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Ongoing Rides', value: stats.ongoingRides, icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50' },

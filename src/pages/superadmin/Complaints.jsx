@@ -180,7 +180,7 @@ export default function Complaints() {
                           "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mr-3",
                           complaint.raisedByModel === 'Partner' ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"
                         )}>
-                          {complaint.raisedByModel.charAt(0)}
+                          {(complaint.raisedByModel || "?").charAt(0)}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-gray-900">{complaint.raisedBy ? complaint.raisedBy.name : 'Unknown'}</p>

@@ -82,7 +82,7 @@ function WebsitePayments({ token }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {cards.map((c) => (
           <div key={c.title} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-4">
             <div className={cn('w-14 h-14 rounded-full flex items-center justify-center shrink-0', c.tone)}>
@@ -366,7 +366,7 @@ function AppPayments() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <MetricCard 
           title="Total Gross Revenue" 
           value={overview.totalRevenue} 

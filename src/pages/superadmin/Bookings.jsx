@@ -314,7 +314,7 @@ function WebsiteBookings({ token }) {
       );
       fetchBookings();
       if (selectedBooking?.bookingId === bookingId) {
-        setSelectedBooking((prev) => ({ ...prev, ...data.data, status: newStatus }));
+        setSelectedBooking((prev) => ({ ...prev, ...data.data, assignedPartner: prev.assignedPartner, status: newStatus }));
       }
       const mail = data.email;
       if (mail?.emailSent) setNotice({ type: 'success', text: `Status updated. Email sent to ${data.data?.passenger?.email}.` });
@@ -442,7 +442,83 @@ function WebsiteBookings({ token }) {
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="md:hidden p-3 space-y-3 bg-slate-50/60">
+          {loading ? (
+            Array(3).fill(0).map((_, i) => <div key={i} className="h-44 rounded-2xl bg-white border border-gray-100 animate-pulse" />)
+          ) : bookings.length === 0 ? (
+            <div className="py-10 flex flex-col items-center text-gray-400 text-center">
+              <Globe className="w-10 h-10 mb-2 opacity-30" />
+              <p className="font-medium text-gray-900">No website bookings found</p>
+              <p className="text-sm">Adjust filters or wait for new bookings.</p>
+            </div>
+          ) : bookings.map((b) => {
+            const pay = getPaymentInfo(b);
+            const ds = getDisplayStatus(b);
+            return (
+              <div key={b._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-start justify-between gap-2 px-4 pt-3.5">
+                  <div className="min-w-0">
+                    <p className="font-bold text-amber-700 font-mono text-xs truncate">{b.bookingId}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Booked {formatDate(b.createdAt)}</p>
+                  </div>
+                  <span className={cn('shrink-0 px-2.5 py-1 text-[11px] font-semibold rounded-full capitalize whitespace-nowrap',
+                    ds === 'awaiting_payment' ? 'bg-yellow-100 text-yellow-800' : ds === 'payment_failed' ? 'bg-red-100 text-red-800' : STATUS_COLORS[ds] || 'bg-gray-100 text-gray-600')}>
+                    {STATUS_LABELS[ds] || ds?.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div className="px-4 mt-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{b.passenger?.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{b.vehicle?.name}{b.vehicle?.model ? ` · ${b.vehicle.model}` : ''}</p>
+                  </div>
+                  {b.passenger?.mobile && (
+                    <a href={`tel:${b.passenger.mobile}`} className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-100 px-3 py-2 rounded-full">
+                      <Phone className="w-3.5 h-3.5" /> {b.passenger.mobile}
+                    </a>
+                  )}
+                </div>
+
+                <div className="mx-4 mt-3 rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+                    <p className="text-gray-800 leading-snug min-w-0">
+                      <span className="font-medium">{b.trip?.from}</span>
+                      <span className="text-gray-400"> → </span>
+                      <span className="font-medium">{b.trip?.to || 'Local'}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+                    <span className="inline-flex items-center gap-1 font-semibold text-gray-900"><CalendarDays className="w-3.5 h-3.5 text-blue-500" /> {formatTripDate(b.trip?.date)}</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-gray-900"><Clock className="w-3.5 h-3.5 text-blue-500" /> {formatTripTime(b.trip?.time)}</span>
+                    <span className="capitalize text-gray-500">{b.trip?.tripType === 'airport' && b.trip?.airportDir ? `Airport ${b.trip.airportDir === 'from' ? 'pickup' : 'drop'}` : b.trip?.tripType}{b.trip?.distanceKm ? ` · ${b.trip.distanceKm} km` : ''}</span>
+                  </div>
+                  {b.assignedPartner?.name && (
+                    <p className="text-xs text-indigo-600 flex items-center gap-1"><Car className="w-3.5 h-3.5" /> {b.assignedPartner.name}{b.assignedPartner.vehicleNumber ? ` · ${b.assignedPartner.vehicleNumber}` : ''}</p>
+                  )}
+                </div>
+
+                <div className="px-4 mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-gray-50 py-2"><p className="text-[10px] uppercase font-bold text-gray-400">Total</p><p className="font-bold text-gray-900 text-sm">{money(pay.total)}</p></div>
+                  <div className="rounded-xl bg-green-50 py-2"><p className="text-[10px] uppercase font-bold text-green-600/70">Received</p><p className="font-bold text-green-700 text-sm">{money(pay.received)}</p></div>
+                  <div className={cn('rounded-xl py-2', pay.balance > 0 ? 'bg-red-50' : 'bg-green-50')}><p className={cn('text-[10px] uppercase font-bold', pay.balance > 0 ? 'text-red-400' : 'text-green-600/70')}>{pay.isCash ? 'To driver' : 'Balance'}</p><p className={cn('font-bold text-sm', pay.balance > 0 ? 'text-red-600' : 'text-green-700')}>{money(pay.balance)}</p></div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 px-4 py-3">
+                  <span className={cn('px-2.5 py-1 text-[11px] font-semibold rounded-full', PAYMENT_COLORS[b.payment?.status] || 'bg-gray-100 text-gray-600')}>
+                    {pay.isCash && b.payment?.status !== 'paid' ? 'Cash to driver' : PAYMENT_LABELS[b.payment?.status] || 'Pending'}
+                  </span>
+                  <button onClick={() => openDetail(b)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-blue-600 active:bg-blue-700 px-5 py-2 rounded-full">
+                    <Eye className="w-4 h-4" /> View details
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[1150px] text-left text-sm text-gray-600">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50/50 border-b border-gray-100">
               <tr>
@@ -575,24 +651,38 @@ function WebsiteBookings({ token }) {
 
       {/* Detail Modal */}
       {detailModal && selectedBooking && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDetailModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setDetailModal(false)}>
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">{selectedBooking.bookingId}</h3>
                 <p className="text-xs text-gray-400">Booked on {formatDate(selectedBooking.createdAt)}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {(() => {
+                    const ds = getDisplayStatus(selectedBooking);
+                    return (
+                      <span className={cn('px-2 py-0.5 text-[11px] font-semibold rounded-full capitalize',
+                        ds === 'awaiting_payment' ? 'bg-yellow-100 text-yellow-800' : ds === 'payment_failed' ? 'bg-red-100 text-red-800' : STATUS_COLORS[ds] || 'bg-gray-100 text-gray-600')}>
+                        {STATUS_LABELS[ds] || ds?.replace('_', ' ')}
+                      </span>
+                    );
+                  })()}
+                  <span className={cn('px-2 py-0.5 text-[11px] font-semibold rounded-full', PAYMENT_COLORS[selectedBooking.payment?.status] || 'bg-gray-100 text-gray-600')}>
+                    {getPaymentInfo(selectedBooking).isCash && selectedBooking.payment?.status !== 'paid' ? 'Cash to driver' : PAYMENT_LABELS[selectedBooking.payment?.status] || 'Pending'}
+                  </span>
+                </div>
               </div>
               <button onClick={() => setDetailModal(false)} className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Passenger */}
               <div className="bg-blue-50 rounded-xl p-4">
                 <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2"><User className="w-4 h-4" /> Passenger Details</h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><p className="text-xs text-blue-500">Name</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.name}</p></div>
-                  <div><p className="text-xs text-blue-500">Mobile</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.mobile}</p></div>
+                  <div><p className="text-xs text-blue-500">Mobile</p><a href={`tel:${selectedBooking.passenger?.mobile}`} className="font-semibold text-blue-700 hover:underline">{selectedBooking.passenger?.mobile}</a></div>
                   <div><p className="text-xs text-blue-500">Email</p><p className="font-semibold text-gray-900">{selectedBooking.passenger?.email || '—'}</p></div>
                   <div className="col-span-2"><p className="text-xs text-blue-500">Pickup Address</p><p className="font-semibold text-gray-900 text-sm">{selectedBooking.passenger?.pickupAddress || '—'}</p></div>
                   {selectedBooking.passenger?.dropAddress && (
@@ -618,10 +708,13 @@ function WebsiteBookings({ token }) {
                   {selectedBooking.trip?.package && (
                     <div><p className="text-xs text-amber-500">Package</p><p className="font-semibold text-gray-900">{selectedBooking.trip.package}</p></div>
                   )}
+                  {selectedBooking.trip?.tripType === 'roundtrip' && selectedBooking.trip?.returnDate && (
+                    <div><p className="text-xs text-amber-500">Return Date</p><p className="font-semibold text-gray-900">{formatTripDate(selectedBooking.trip.returnDate)}</p></div>
+                  )}
                   {selectedBooking.trip?.tripType === 'roundtrip' && (
                     <div><p className="text-xs text-amber-500">Days</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.days || 1}</p></div>
                   )}
-                  <div><p className="text-xs text-amber-500">Distance</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.distanceKm} km</p></div>
+                  <div><p className="text-xs text-amber-500">Distance</p><p className="font-semibold text-gray-900">{selectedBooking.trip?.distanceKm ? `${selectedBooking.trip.distanceKm} km` : '—'}</p></div>
                   <div><p className="text-xs text-amber-500">Vehicle</p><p className="font-semibold text-gray-900">{selectedBooking.vehicle?.name} — {selectedBooking.vehicle?.model}{selectedBooking.vehicle?.seats ? ` (${selectedBooking.vehicle.seats} seats)` : ''}</p></div>
                 </div>
               </div>
@@ -634,6 +727,10 @@ function WebsiteBookings({ token }) {
                     ['Base Fare', selectedBooking.fare?.baseFare],
                     ['Extra KM Fare', selectedBooking.fare?.extraKmFare],
                     ['Driver Allowance', selectedBooking.fare?.driverAllowance],
+                    ...(Array.isArray(selectedBooking.fare?.addons) ? selectedBooking.fare.addons : []).map((a, i) => [
+                      `Add-on: ${a?.label || a?.title || a?.name || a?.code || `#${i + 1}`}${a?.qty > 1 ? ` x${a.qty}` : ''}`,
+                      Number(a?.total ?? a?.price ?? a?.amount) || 0,
+                    ]),
                     ['GST', selectedBooking.fare?.gst],
                     ...(selectedBooking.fare?.discount > 0
                       ? [[`Coupon Discount${selectedBooking.fare.couponCode ? ` (${selectedBooking.fare.couponCode})` : ''}`, -selectedBooking.fare.discount]]
@@ -643,7 +740,7 @@ function WebsiteBookings({ token }) {
                     ['Received so far', getPaymentInfo(selectedBooking).received],
                     ['Balance (to driver)', getPaymentInfo(selectedBooking).balance],
                   ].map(([label, val]) => (
-                    <div key={label} className={cn('flex justify-between', label === 'Total' && 'font-bold border-t border-green-200 pt-1.5 mt-1.5')}>
+                    <div key={label} className={cn('flex justify-between gap-3', label === 'Total' && 'font-bold border-t border-green-200 pt-1.5 mt-1.5')}>
                       <span className="text-green-700">{label}</span>
                       <span className={cn(val < 0 ? 'text-green-700 font-semibold' : 'text-gray-900')}>{val < 0 ? '- ' : ''}₹{Math.abs(val || 0)}</span>
                     </div>
@@ -675,14 +772,18 @@ function WebsiteBookings({ token }) {
                       {!selectedBooking.passenger?.email ? 'No email given' : selectedBooking.notification?.emailSent ? 'Sent' : 'Not sent'}
                     </p>
                   </div>
+                  <div><p className="text-xs text-slate-500">Last Updated</p><p className="font-semibold text-gray-900">{formatDate(selectedBooking.updatedAt)}</p></div>
                 </div>
               </div>
 
               {/* Driver / notes */}
-              {(selectedBooking.assignedPartner?.name || selectedBooking.adminNote || selectedBooking.cancelReason) && (
+              {(
                 <div className="bg-indigo-50 rounded-xl p-4">
                   <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2"><Car className="w-4 h-4" /> Driver &amp; Notes</h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
+                    {!selectedBooking.assignedPartner?.name && (
+                      <div className="col-span-2"><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-500 italic">Not assigned yet</p></div>
+                    )}
                     {selectedBooking.assignedPartner?.name && (
                       <>
                         <div><p className="text-xs text-indigo-500">Driver</p><p className="font-semibold text-gray-900">{selectedBooking.assignedPartner.name}</p></div>
@@ -697,6 +798,21 @@ function WebsiteBookings({ token }) {
                       <div className="col-span-2"><p className="text-xs text-indigo-500">Admin Note</p><p className="font-semibold text-gray-900">{selectedBooking.adminNote}</p></div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Status timeline */}
+              {Array.isArray(selectedBooking.statusHistory) && selectedBooking.statusHistory.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Status History</h4>
+                  <ol className="space-y-2 text-sm">
+                    {[...selectedBooking.statusHistory].reverse().map((h, i) => (
+                      <li key={`${h.status}-${h.at}-${i}`} className="flex items-center justify-between gap-3">
+                        <span className={cn('px-2 py-0.5 text-xs font-semibold rounded-full capitalize', STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-600')}>{h.status?.replace('_', ' ')}</span>
+                        <span className="text-xs text-gray-500">{formatDate(h.at)}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
 
@@ -745,33 +861,33 @@ export default function Bookings() {
   const [activeTab, setActiveTab] = useState('website');
 
   const TABS = [
-    { id: 'website', label: 'Website Bookings', icon: Globe, desc: 'Bookings from public website (goindiacab.com)' },
-    { id: 'app', label: 'App / Dashboard Bookings', icon: Smartphone, desc: 'Bookings from mobile app & user dashboard' },
+    { id: 'website', short: 'Website', label: 'Website Bookings', icon: Globe, desc: 'Bookings from public website (goindiacab.com)' },
+    { id: 'app', short: 'App', label: 'App / Dashboard Bookings', icon: Smartphone, desc: 'Bookings from mobile app & user dashboard' },
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="md:p-6 max-w-7xl mx-auto space-y-3 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 gap-2 md:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
               <CalendarDays className="w-5 h-5 text-blue-600" />
             </div>
             Booking Management
           </h2>
-          <p className="text-gray-500 mt-1 text-sm">Monitor and manage all trips — both from the app and website.</p>
+          <p className="text-gray-500 mt-1 text-xs md:text-sm">Monitor and manage all trips — both from the app and website.</p>
         </div>
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="grid grid-cols-2 gap-2 md:gap-3">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-xl border transition-all text-left',
+              'flex items-center justify-center md:justify-start gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 rounded-xl border transition-all text-left',
               activeTab === tab.id
                 ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:bg-blue-50'
@@ -779,8 +895,8 @@ export default function Bookings() {
           >
             <tab.icon className="w-5 h-5 shrink-0" />
             <div>
-              <p className="font-semibold text-sm">{tab.label}</p>
-              <p className={cn('text-xs', activeTab === tab.id ? 'text-blue-200' : 'text-gray-400')}>{tab.desc}</p>
+              <p className="font-semibold text-xs md:text-sm"><span className="md:hidden">{tab.short}</span><span className="hidden md:inline">{tab.label}</span></p>
+              <p className={cn('hidden md:block text-xs', activeTab === tab.id ? 'text-blue-200' : 'text-gray-400')}>{tab.desc}</p>
             </div>
           </button>
         ))}

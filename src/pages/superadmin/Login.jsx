@@ -35,8 +35,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f9fc]">
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+    <div className="min-h-dvh flex items-center justify-center bg-[#f7f9fc] p-4">
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg max-w-md w-full">
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 mb-4 flex items-center justify-center">
             <img src="/Goindaicab%20logo.png" alt="Goindiacab Logo" className="object-contain w-full h-full" />
