@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
-import { Search, Eye, X, Trash2, Mail, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Eye, X, Trash2, Mail, MessageSquare, ChevronLeft, ChevronRight, Reply, Send } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -63,6 +63,9 @@ export default function ContactInquiries() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [drawerMsg, setDrawerMsg] = useState('');
+  const [replyText, setReplyText] = useState('');
+  const [replyMsg, setReplyMsg] = useState(null);
+  const [sending, setSending] = useState(false);
   const reqId = useRef(0);
 
   useEffect(() => {
@@ -110,6 +113,8 @@ export default function ContactInquiries() {
     setDraftNote(row.adminNote || '');
     setConfirmDelete(false);
     setDrawerMsg('');
+    setReplyText('');
+    setReplyMsg(null);
     try {
       // Fetching marks a "new" inquiry as "read".
       const { data } = await axios.get(`${API_URL}/api/admin/contacts/${row._id}`, { headers });
@@ -128,7 +133,29 @@ export default function ContactInquiries() {
     }
   };
 
-  const closeDrawer = () => { setSelected(null); setConfirmDelete(false); };
+  const closeDrawer = () => { setSelected(null); setConfirmDelete(false); setReplyText(''); setReplyMsg(null); };
+
+  // Emails the reply to the customer; the server stores it and marks the inquiry "replied".
+  const sendReply = async () => {
+    setSending(true);
+    setReplyMsg(null);
+    try {
+      const { data } = await axios.post(`${API_URL}/api/admin/contacts/${selected._id}/reply`, { message: replyText }, { headers });
+      if (data.success) {
+        setSelected(data.data);
+        setDraftStatus(data.data.status);
+        setItems((list) => list.map((i) => (i._id === data.data._id ? data.data : i)));
+        setReplyText('');
+        setReplyMsg({ ok: true, text: data.message });
+        fetchList(true);
+        window.dispatchEvent(new Event('contact-inquiries-changed'));
+      }
+    } catch (err) {
+      setReplyMsg({ ok: false, text: err.response?.data?.message || 'Failed to send reply' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -332,6 +359,39 @@ export default function ContactInquiries() {
                 <div><dt className="text-xs font-bold uppercase text-gray-400">Received</dt><dd className="text-gray-700">{fmtDate(selected.createdAt)}</dd></div>
                 <div><dt className="text-xs font-bold uppercase text-gray-400">Message</dt><dd className="text-gray-800 whitespace-pre-wrap bg-gray-50 rounded-xl p-3 mt-1 break-words">{selected.message}</dd></div>
               </dl>
+
+              {/* Reply to customer */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-bold text-gray-900"><Reply className="w-4 h-4 text-blue-600" /> Reply to customer</div>
+
+                {(selected.replies || []).length > 0 && (
+                  <ul className="space-y-2 max-h-48 overflow-y-auto">
+                    {selected.replies.map((r) => (
+                      <li key={r._id} className="bg-white border border-gray-100 rounded-lg p-3 text-sm">
+                        <p className="whitespace-pre-wrap break-words text-gray-800">{r.message}</p>
+                        <p className="text-xs text-gray-400 mt-1.5">Sent {fmtDate(r.sentAt)}{r.sentBy ? ` by ${r.sentBy}` : ''}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {selected.email ? (
+                  <>
+                    <p className="text-xs text-gray-500">This will be emailed to <b className="text-gray-700">{selected.email}</b>.</p>
+                    <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} maxLength={5000} placeholder="Write your reply to the customer..." className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                    {replyMsg && <p className={cn('text-sm font-medium', replyMsg.ok ? 'text-green-600' : 'text-red-600')}>{replyMsg.text}</p>}
+                    <div className="flex justify-end">
+                      <button onClick={sendReply} disabled={sending || replyText.trim().length < 2} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
+                        <Send className="w-4 h-4" /> {sending ? 'Sending...' : 'Send Reply'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                    This customer did not give an email address, so a reply cannot be emailed. Please call <a href={`tel:+91${selected.phone}`} className="font-semibold underline">{selected.phone}</a>.
+                  </p>
+                )}
+              </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase text-gray-400 mb-1">Status</label>
