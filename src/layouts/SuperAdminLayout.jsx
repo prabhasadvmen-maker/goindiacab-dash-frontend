@@ -20,8 +20,10 @@ import {
   Truck,
   Ticket,
   MessageSquareWarning,
+  MessageSquare,
   X
 } from 'lucide-react';
+import axios from 'axios';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -38,6 +40,27 @@ export default function SuperAdminLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const mainRef = useRef(null);
+  const superAdminToken = useAuthStore((s) => s.superAdminToken);
+  const [newInquiries, setNewInquiries] = useState(0);
+
+  // Unread contact-inquiry count for the sidebar badge (refreshed every 60s and when the inquiries page changes data).
+  useEffect(() => {
+    if (!superAdminToken) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/contacts`, {
+          headers: { Authorization: `Bearer ${superAdminToken}` },
+          params: { limit: 1, status: 'new' },
+        });
+        if (!cancelled && data.success) setNewInquiries(data.stats?.new || 0);
+      } catch { /* badge is best-effort */ }
+    };
+    load();
+    const t = setInterval(load, 60000);
+    window.addEventListener('contact-inquiries-changed', load);
+    return () => { cancelled = true; clearInterval(t); window.removeEventListener('contact-inquiries-changed', load); };
+  }, [superAdminToken]);
 
   // Below 768px the sidebar becomes an off-canvas drawer and always shows full labels.
   useEffect(() => {
@@ -100,6 +123,7 @@ export default function SuperAdminLayout() {
     { name: 'Fleet & Pricing', icon: Truck, path: '/superadmin/fleet' },
     { name: 'Coupons', icon: Ticket, path: '/superadmin/coupons' },
     { name: 'Complaints', icon: MessageSquareWarning, path: '/superadmin/complaints' },
+    { name: 'Contact Inquiries', icon: MessageSquare, path: '/superadmin/contact-inquiries', badge: newInquiries },
     { name: 'Operations', icon: Briefcase, path: '/superadmin/operations' },
     { name: 'Finance', icon: IndianRupee, path: '/superadmin/finance' },
     { name: 'Reports', icon: FileText, path: '/superadmin/reports' },
@@ -138,6 +162,14 @@ export default function SuperAdminLayout() {
       >
         {item.name}
       </span>
+      {item.badge > 0 && (
+        <span className={cn(
+          "bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center",
+          isSidebarOpen ? "ml-auto" : "absolute top-1.5 right-2"
+        )}>
+          {item.badge > 99 ? '99+' : item.badge}
+        </span>
+      )}
     </NavLink>
   );
 

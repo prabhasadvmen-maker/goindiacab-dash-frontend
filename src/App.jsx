@@ -26,6 +26,7 @@ const AdminProfile = lazy(() => import('./pages/superadmin/Profile'));
 const Settings = lazy(() => import('./pages/superadmin/Settings'));
 const WebsiteManagement = lazy(() => import('./pages/superadmin/WebsiteManagement'));
 const Help = lazy(() => import('./pages/superadmin/Help'));
+const ContactInquiries = lazy(() => import('./pages/superadmin/ContactInquiries'));
 const FleetManagement = lazy(() => import('./pages/superadmin/FleetManagement'));
 const CouponManagement = lazy(() => import('./pages/superadmin/CouponManagement'));
 const PartnerBookings = lazy(() => import('./pages/partner/Bookings'));
@@ -205,6 +206,7 @@ function App() {
           <Route path="website" element={<WebsiteManagement />} />
           <Route path="fleet" element={<FleetManagement />} />
           <Route path="coupons" element={<CouponManagement />} />
+          <Route path="contact-inquiries" element={<ContactInquiries />} />
           <Route path="complaints">
             <Route index element={<Complaints />} />
             <Route path=":id" element={<ComplaintDetails />} />
