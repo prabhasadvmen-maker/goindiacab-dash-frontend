@@ -21,6 +21,7 @@ import {
   Ticket,
   MessageSquareWarning,
   MessageSquare,
+  BookOpen,
   X
 } from 'lucide-react';
 import axios from 'axios';
@@ -128,6 +129,7 @@ export default function SuperAdminLayout() {
     { name: 'Finance', icon: IndianRupee, path: '/superadmin/finance' },
     { name: 'Reports', icon: FileText, path: '/superadmin/reports' },
     { name: 'Website', icon: Globe, path: '/superadmin/website' },
+    { name: 'Blog', icon: BookOpen, path: '/superadmin/blog' },
   ];
 
   const bottomMenuItems = [

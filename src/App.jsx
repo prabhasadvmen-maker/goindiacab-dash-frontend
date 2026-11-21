@@ -29,6 +29,7 @@ const Help = lazy(() => import('./pages/superadmin/Help'));
 const ContactInquiries = lazy(() => import('./pages/superadmin/ContactInquiries'));
 const FleetManagement = lazy(() => import('./pages/superadmin/FleetManagement'));
 const CouponManagement = lazy(() => import('./pages/superadmin/CouponManagement'));
+const Blog = lazy(() => import('./pages/superadmin/Blog'));
 const PartnerBookings = lazy(() => import('./pages/partner/Bookings'));
 const PartnerBookingDetails = lazy(() => import('./pages/partner/BookingDetails'));
 const PartnerTrips = lazy(() => import('./pages/partner/Trips'));
@@ -204,6 +205,7 @@ function App() {
           <Route path="location" element={<Location />} />
           <Route path="reports" element={<Reports />} />
           <Route path="website" element={<WebsiteManagement />} />
+          <Route path="blog" element={<Blog />} />
           <Route path="fleet" element={<FleetManagement />} />
           <Route path="coupons" element={<CouponManagement />} />
           <Route path="contact-inquiries" element={<ContactInquiries />} />
